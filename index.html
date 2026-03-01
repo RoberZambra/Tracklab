@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <!-- viewport-fit=cover garante uso total em telas com notch -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>TrackLab — Comparador de Atividades</title>
+
+  <!-- PWA -->
+  <meta name="theme-color" content="#0d0221" />
+  <meta name="description" content="Compare suas atividades TCX e GPX com gráficos e mapa interativo." />
+  <link rel="manifest" href="manifest.json" />
+
+  <!-- Fonts — display=swap evita FOUT em mobile -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: {
+        fontFamily: {
+          display: ['Space Grotesk', 'sans-serif'],
+          mono: ['Fira Code', 'monospace'],
+        },
+      }},
+    };
+  </script>
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body class="font-display min-h-screen">
+
+  <!-- ══════════════════════════════════
+       HEADER — compacto em mobile
+  ══════════════════════════════════ -->
+  <header class="app-header sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
+
+      <!-- Logo -->
+      <div class="flex items-center gap-2 flex-shrink-0">
+        <div class="logo-mark">
+          <svg width="34" height="34" viewBox="0 0 38 38" fill="none">
+            <rect width="38" height="38" rx="10" fill="url(#lg1)"/>
+            <path d="M7 28 L13 17 L19 21 L26 11 L31 19" stroke="white" stroke-width="2.5"
+                  stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            <circle cx="13" cy="17" r="2.5" fill="#00f5ff"/>
+            <circle cx="26" cy="11" r="2.5" fill="#ff3cac"/>
+            <defs>
+              <linearGradient id="lg1" x1="0" y1="0" x2="38" y2="38" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#7b2ff7"/>
+                <stop offset="100%" stop-color="#f107a3"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <span class="text-lg font-bold text-white tracking-tight leading-none">
+          Track<span class="text-gradient">Lab</span>
+        </span>
+      </div>
+
+      <!-- Tabs desktop (md+) -->
+      <nav id="dashNav" class="hidden md:flex items-center gap-1 bg-white/5 border border-white/10 rounded-xl p-1">
+        <button data-tab="summary" class="tab-pill active">📊 Resumo</button>
+        <button data-tab="charts"  class="tab-pill">📈 Gráficos</button>
+        <button data-tab="map"     class="tab-pill">🗺️ Mapa</button>
+        <button data-tab="table"   class="tab-pill">📋 Tabela</button>
+      </nav>
+
+      <!-- Botões direita -->
+      <div class="flex items-center gap-2 flex-shrink-0">
+        <button id="backBtn"       class="hidden pill-btn-ghost">← Voltar</button>
+        <button id="clearBtn"      class="hidden pill-btn-danger">✕</button>
+        <button id="pwaInstallBtn" class="hidden pill-btn-accent" onclick="installPWA()">⊕ Instalar</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 py-6 md:py-10">
+
+    <!-- ══════════════════════════════════
+         UPLOAD
+    ══════════════════════════════════ -->
+    <section id="uploadSection">
+
+      <!-- Hero -->
+      <div class="text-center mb-8 md:mb-12">
+        <div class="inline-flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-3 py-1.5 mb-5">
+          <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse flex-shrink-0"></span>
+          <span class="text-xs font-mono text-white/50">TCX · GPX · Multi-arquivo · Mapa</span>
+        </div>
+
+        <h2 class="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tighter text-white leading-none mb-4">
+          Compare sua<br/>
+          <span class="text-gradient-big">performance</span>
+        </h2>
+        <p class="text-white/40 text-base md:text-sm font-mono max-w-sm mx-auto leading-relaxed">
+          Carregue 2+ arquivos de treino e visualize gráficos sobrepostos e rotas no mapa.
+        </p>
+      </div>
+
+      <!-- Drop Zone — toque amigável em mobile -->
+      <div id="dropZone" class="drop-zone mx-auto max-w-2xl cursor-pointer"
+           onclick="document.getElementById('fileInput').click()">
+        <div class="drop-glow-ring ring-1"></div>
+        <div class="drop-glow-ring ring-2"></div>
+        <div class="relative z-10 text-center py-10 px-6 md:py-14 md:px-8">
+          <div class="upload-icon-wrap mx-auto mb-4">
+            <svg width="44" height="44" viewBox="0 0 52 52" fill="none">
+              <path d="M26 38V20M26 20L19 27M26 20L33 27" stroke="url(#ug)" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M11 40C8 40 5.5 37.5 5.5 34.5C5.5 31.8 7.4 29.5 10 29C10 28.6 10 28.2 10 27.8C10 23.2 13.6 19.5 18 19.5C18.6 19.5 19.2 19.6 19.7 19.7C21.1 16.4 24.3 14 28 14C31.7 14 34.9 16.4 36.3 19.7C36.8 19.6 37.4 19.5 38 19.5C42.4 19.5 46 23.2 46 27.8C46 28.2 46 28.6 45.9 29C48.5 29.5 50.4 31.8 50.4 34.5C50.4 37.5 47.9 40 44.9 40H11Z"
+                    stroke="url(#ug)" stroke-width="1.5" fill="none" opacity="0.4"/>
+              <defs>
+                <linearGradient id="ug" x1="0" y1="0" x2="52" y2="52" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#00f5ff"/><stop offset="1" stop-color="#7b2ff7"/>
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+          <!-- Texto maior em mobile para legibilidade -->
+          <p class="text-white font-bold text-xl mb-2">Toque para selecionar</p>
+          <p class="text-white/40 font-mono text-sm mb-5">ou arraste arquivos · .tcx e .gpx</p>
+          <div class="flex justify-center gap-2 flex-wrap">
+            <span class="feature-chip">📈 Gráficos</span>
+            <span class="feature-chip">🗺️ Mapa GPS</span>
+            <span class="feature-chip">💾 Offline</span>
+          </div>
+        </div>
+        <input type="file" id="fileInput" multiple accept=".tcx,.gpx" class="hidden" />
+      </div>
+
+      <!-- Lista de arquivos -->
+      <div id="fileList" class="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3 hidden max-w-2xl mx-auto"></div>
+
+      <!-- Botão CTA -->
+      <div class="mt-6 text-center">
+        <button id="compareBtn" class="hidden cta-btn w-full sm:w-auto">
+          <span>Comparar Atividades</span>
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <path d="M4 9h10M10 5l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════
+         DASHBOARD
+    ══════════════════════════════════ -->
+    <section id="dashboard" class="hidden">
+
+      <!-- Tab bar mobile — sticky abaixo do header -->
+      <div class="md:hidden sticky top-[57px] z-40 mb-5 -mx-4 px-4 py-2 bg-[#0d0221]/90 backdrop-blur-lg border-b border-white/5">
+        <div class="flex gap-1 bg-white/5 border border-white/10 rounded-xl p-1">
+          <button data-tab="summary" class="tab-pill active flex-1 text-center text-base">📊</button>
+          <button data-tab="charts"  class="tab-pill flex-1 text-center text-base">📈</button>
+          <button data-tab="map"     class="tab-pill flex-1 text-center text-base">🗺️</button>
+          <button data-tab="table"   class="tab-pill flex-1 text-center text-base">📋</button>
+        </div>
+      </div>
+
+      <!-- ── SUMMARY TAB ── -->
+      <div id="tab-summary" class="tab-content">
+        <!-- Badges de atividades -->
+        <div id="activityStrip" class="flex flex-wrap gap-2 mb-6"></div>
+
+        <!-- KPI Cards: 2 colunas no mobile, mais no desktop -->
+        <div id="summaryCards" class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 mb-6"></div>
+
+        <!-- Mini gráficos preview -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="glass-card p-4">
+            <p class="label-sm mb-3">⚡ Potência (preview)</p>
+            <div style="height:160px"><canvas id="miniChart1"></canvas></div>
+          </div>
+          <div class="glass-card p-4">
+            <p class="label-sm mb-3">❤️ Frequência Cardíaca (preview)</p>
+            <div style="height:160px"><canvas id="miniChart2"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── CHARTS TAB ── -->
+      <div id="tab-charts" class="tab-content hidden">
+        <div class="glass-card p-4 md:p-6">
+          <!-- Header + botões de métrica -->
+          <div class="flex flex-col gap-3 mb-4">
+            <h3 class="font-bold text-lg text-white flex items-center gap-2">
+              <span class="tag-pill tag-purple">Gráficos</span>
+              Métricas Sobrepostas
+            </h3>
+            <!-- Métricas: scroll horizontal em mobile -->
+            <div class="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 no-scrollbar" id="metricBtns"></div>
+            <!-- Eixo X -->
+            <div class="flex gap-2" id="xAxisBtns">
+              <button data-axis="time"     class="axis-btn active flex-1 text-center">⏱ Tempo</button>
+              <button data-axis="distance" class="axis-btn flex-1 text-center">📍 Distância</button>
+            </div>
+          </div>
+
+          <!-- Gráfico — altura adaptativa -->
+          <div class="chart-container">
+            <canvas id="mainChart"></canvas>
+          </div>
+          <p class="text-center text-xs font-mono text-white/20 mt-3 hidden sm:block">
+            Pinça = zoom · Arrastar = navegar · Legenda = ocultar série
+          </p>
+        </div>
+      </div>
+
+      <!-- ── MAP TAB ── -->
+      <div id="tab-map" class="tab-content hidden">
+        <div class="glass-card overflow-hidden p-0">
+          <!-- Toolbar do mapa — empilha em mobile -->
+          <div class="map-toolbar px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+              <span class="tag-pill tag-green">🗺️</span>
+              <span class="font-bold text-white">Tracklogs Sobrepostos</span>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <div id="mapLayerToggles" class="flex flex-wrap gap-2"></div>
+              <select id="mapStyle" class="map-style-select">
+                <option value="dark">🌑 Dark</option>
+                <option value="satellite">🛰️ Satélite</option>
+                <option value="topo">🏔️ Topográfico</option>
+                <option value="street">🏙️ Street</option>
+              </select>
+            </div>
+          </div>
+          <!-- Mapa: altura menor em mobile -->
+          <div id="mapContainer" class="map-container"></div>
+          <!-- Legenda -->
+          <div id="mapLegend" class="px-4 py-3 flex flex-wrap gap-4 border-t border-white/5"></div>
+        </div>
+      </div>
+
+      <!-- ── TABLE TAB ── -->
+      <div id="tab-table" class="tab-content hidden">
+        <div class="glass-card p-4 md:p-6">
+          <h3 class="font-bold text-lg text-white flex items-center gap-2 mb-5">
+            <span class="tag-pill tag-orange">📋</span> Comparativo Detalhado
+          </h3>
+          <!-- Scroll horizontal para a tabela em telas pequenas -->
+          <div class="overflow-x-auto -mx-2 px-2">
+            <table class="w-full table-comp" id="compTable">
+              <thead>
+                <tr class="border-b border-white/10" id="compTableHead">
+                  <th class="text-left py-3 pr-4 text-white/30 text-xs tracking-wider uppercase font-medium">Métrica</th>
+                </tr>
+              </thead>
+              <tbody id="compTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- Toast — posição segura no mobile -->
+  <div id="toast" class="fixed bottom-5 left-4 right-4 sm:left-auto sm:right-6 sm:w-auto z-[9999] hidden">
+    <div class="toast-inner flex items-center gap-3 px-4 py-3 rounded-2xl shadow-2xl font-mono text-sm">
+      <span id="toastIcon" class="flex-shrink-0 text-base">⚠</span>
+      <span id="toastMsg" class="text-sm"></span>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
