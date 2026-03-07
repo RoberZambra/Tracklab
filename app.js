@@ -10,14 +10,14 @@
 // PALETA DE CORES PARA AS ATIVIDADES
 // ──────────────────────────────────────────────────────
 const ACTIVITY_COLORS = [
-  '#e03a1e', // brand red
-  '#3d8ef0', // blue
-  '#d4a017', // yellow/gold
-  '#3da870', // green
-  '#a78bfa', // violet
-  '#f472b6', // pink
-  '#fb923c', // amber
-  '#34d399', // emerald
+  '#0047ff', // royal blue (brand)
+  '#e85d1a', // warm orange
+  '#0a8a5c', // forest green
+  '#9333ea', // violet
+  '#0ea5e9', // sky blue
+  '#f59e0b', // amber
+  '#dc2626', // red
+  '#0891b2', // cyan
 ];
 
 // ──────────────────────────────────────────────────────
@@ -499,11 +499,11 @@ async function runComparison() {
  */
 function hrZoneDefs(maxHR) {
   return [
-    { label: 'Z5', min: Math.round(maxHR * 0.90), max: maxHR,                    color: '#e03a1e', range: `> ${Math.round(maxHR * 0.90)} bpm` },
-    { label: 'Z4', min: Math.round(maxHR * 0.80), max: Math.round(maxHR * 0.89), color: '#e8502a', range: `${Math.round(maxHR * 0.80)}–${Math.round(maxHR * 0.89)} bpm` },
-    { label: 'Z3', min: Math.round(maxHR * 0.70), max: Math.round(maxHR * 0.79), color: '#e06040', range: `${Math.round(maxHR * 0.70)}–${Math.round(maxHR * 0.79)} bpm` },
-    { label: 'Z2', min: Math.round(maxHR * 0.60), max: Math.round(maxHR * 0.69), color: '#d4806a', range: `${Math.round(maxHR * 0.60)}–${Math.round(maxHR * 0.69)} bpm` },
-    { label: 'Z1', min: 0,                          max: Math.round(maxHR * 0.59), color: '#c4a090', range: `0–${Math.round(maxHR * 0.59)} bpm` },
+    { label: 'Z5', min: Math.round(maxHR * 0.90), max: maxHR,                    color: '#0047ff', range: `> ${Math.round(maxHR * 0.90)} bpm` },
+    { label: 'Z4', min: Math.round(maxHR * 0.80), max: Math.round(maxHR * 0.89), color: '#2563ff', range: `${Math.round(maxHR * 0.80)}–${Math.round(maxHR * 0.89)} bpm` },
+    { label: 'Z3', min: Math.round(maxHR * 0.70), max: Math.round(maxHR * 0.79), color: '#4a7fff', range: `${Math.round(maxHR * 0.70)}–${Math.round(maxHR * 0.79)} bpm` },
+    { label: 'Z2', min: Math.round(maxHR * 0.60), max: Math.round(maxHR * 0.69), color: '#7aa8ff', range: `${Math.round(maxHR * 0.60)}–${Math.round(maxHR * 0.69)} bpm` },
+    { label: 'Z1', min: 0,                          max: Math.round(maxHR * 0.59), color: '#b3ccff', range: `0–${Math.round(maxHR * 0.59)} bpm` },
   ];
 }
 
@@ -757,8 +757,8 @@ function buildMap() {
     preferCanvas: true,
   });
 
-  // Tile layer escuro — CartoDB Dark Matter
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  // Tile layer claro — CartoDB Positron
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
     attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/">CARTO</a>',
     subdomains: 'abcd',
     maxZoom: 19,
@@ -1075,8 +1075,8 @@ function buildChart() {
         legend: {
           display: true,
           labels: {
-            color: 'rgba(255,255,255,0.5)',
-            font: { family: 'JetBrains Mono', size: 11 },
+            color: 'rgba(10,10,18,0.45)',
+            font: { family: 'IBM Plex Mono', size: 11 },
             boxWidth: 14,
             boxHeight: 14,
             usePointStyle: true,
@@ -1084,13 +1084,13 @@ function buildChart() {
           },
         },
         tooltip: {
-          backgroundColor: 'rgba(20,20,20,0.96)',
-          borderColor: 'rgba(255,255,255,0.08)',
+          backgroundColor: 'rgba(255,255,255,0.98)',
+          borderColor: 'rgba(0,71,255,0.12)',
           borderWidth: 1,
-          titleColor: 'rgba(255,255,255,0.35)',
-          bodyColor: 'rgba(255,255,255,0.85)',
-          titleFont: { family: 'JetBrains Mono', size: 10 },
-          bodyFont: { family: 'JetBrains Mono', size: 12 },
+          titleColor: 'rgba(10,10,18,0.45)',
+          bodyColor: 'rgba(10,10,18,0.85)',
+          titleFont: { family: 'IBM Plex Mono', size: 10 },
+          bodyFont: { family: 'IBM Plex Mono', size: 12 },
           padding: 12,
           callbacks: {
             title: items => {
@@ -1113,27 +1113,27 @@ function buildChart() {
           title: {
             display: true,
             text: state.currentAxis === 'time' ? 'Tempo (min)' : 'Distância (km)',
-            color: 'rgba(255,255,255,0.25)',
-            font: { family: 'JetBrains Mono', size: 10 },
+            color: 'rgba(10,10,18,0.3)',
+            font: { family: 'IBM Plex Mono', size: 10 },
           },
           ticks: {
-            color: 'rgba(255,255,255,0.25)',
-            font: { family: 'JetBrains Mono', size: 10 },
+            color: 'rgba(10,10,18,0.3)',
+            font: { family: 'IBM Plex Mono', size: 10 },
           },
-          grid: { color: 'rgba(255,255,255,0.04)' },
+          grid: { color: 'rgba(0,71,255,0.05)' },
         },
         y: {
           title: {
             display: true,
             text: `${metric.label} (${metric.unit})`,
-            color: 'rgba(255,255,255,0.25)',
-            font: { family: 'JetBrains Mono', size: 10 },
+            color: 'rgba(10,10,18,0.3)',
+            font: { family: 'IBM Plex Mono', size: 10 },
           },
           ticks: {
-            color: 'rgba(255,255,255,0.25)',
-            font: { family: 'JetBrains Mono', size: 10 },
+            color: 'rgba(10,10,18,0.3)',
+            font: { family: 'IBM Plex Mono', size: 10 },
           },
-          grid: { color: 'rgba(255,255,255,0.04)' },
+          grid: { color: 'rgba(0,71,255,0.05)' },
         },
       },
     },
