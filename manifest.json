@@ -1,27 +1,23 @@
 {
-  "name": "TrackLab — Comparador de Atividades",
-  "short_name": "TrackLab",
-  "description": "Compare métricas de performance em arquivos TCX e GPX com gráficos interativos.",
-  "start_url": "/",
+  "name": "EnduranceIQ – Comparador de Treinos",
+  "short_name": "EnduranceIQ",
+  "description": "Compare seus treinos de corrida e ciclismo com análise avançada de GPX e TCX",
+  "start_url": "./",
   "display": "standalone",
-  "background_color": "#04080f",
-  "theme_color": "#0a0f1e",
+  "background_color": "#040710",
+  "theme_color": "#00e87e",
   "orientation": "any",
-  "categories": [
-    "sports",
-    "health",
-    "fitness"
-  ],
   "lang": "pt-BR",
+  "categories": ["sports", "fitness", "health"],
   "icons": [
     {
-      "src": "icons/icon-192.svg",
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='32' fill='%23040710'/%3E%3Cpolyline points='22 96 58 96 75 141 111 51 128 96 170 96' fill='none' stroke='%2300e87e' stroke-width='14' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E",
       "sizes": "192x192",
       "type": "image/svg+xml",
       "purpose": "any maskable"
     },
     {
-      "src": "icons/icon-512.svg",
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='80' fill='%23040710'/%3E%3Cpolyline points='56 256 152 256 200 376 296 136 344 256 456 256' fill='none' stroke='%2300e87e' stroke-width='36' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E",
       "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "any maskable"
@@ -30,10 +26,10 @@
   "screenshots": [],
   "shortcuts": [
     {
-      "name": "Nova Comparação",
+      "name": "Comparar Treinos",
       "short_name": "Comparar",
-      "description": "Iniciar uma nova comparação de arquivos",
-      "url": "/"
+      "description": "Abrir o comparador de treinos",
+      "url": "./"
     }
   ]
 }
