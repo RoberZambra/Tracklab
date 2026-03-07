@@ -1,439 +1,632 @@
 <!DOCTYPE html>
-<html lang="pt-BR" class="dark">
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>EnduranceIQ – Comparador de Treinos</title>
-  <meta name="description" content="Compare seus treinos de corrida e ciclismo com análise avançada de GPX e TCX" />
-  <meta name="theme-color" content="#0a0f1e" />
+  <title>Endurance — Comparador de Atividades</title>
+  <meta name="theme-color" content="#0d0d0d" />
+  <meta name="description" content="Compare suas atividades TCX e GPX com gráficos interativos." />
   <link rel="manifest" href="manifest.json" />
-  <link rel="apple-touch-icon" href="icons/icon-192.png" />
-
-  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
-
-  <!-- Tailwind CDN -->
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,500;0,600;0,700;0,800;1,600&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- Leaflet CSS -->
+  <script>tailwind.config={theme:{extend:{fontFamily:{display:['Barlow Condensed','sans-serif'],body:['Inter','sans-serif'],mono:['JetBrains Mono','monospace']}}}};</script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
-
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: {
-            display: ['Bebas Neue', 'sans-serif'],
-            body: ['DM Sans', 'sans-serif'],
-            mono: ['JetBrains Mono', 'monospace'],
-          },
-          colors: {
-            brand: {
-              50:  '#e8fff4',
-              100: '#c3ffe4',
-              200: '#8bffcc',
-              300: '#40ffaa',
-              400: '#00e87e',
-              500: '#00c962',
-              600: '#00a050',
-              700: '#007d41',
-              800: '#006236',
-              900: '#00502e',
-            },
-            dark: {
-              950: '#040710',
-              900: '#080d1a',
-              800: '#0d1426',
-              700: '#121c35',
-              600: '#1a2845',
-              500: '#243558',
-            }
-          }
-        }
-      }
-    }
-  </script>
-
   <style>
-    :root {
-      --accent: #00e87e;
-      --accent-dim: rgba(0,232,126,0.15);
-      --accent-glow: rgba(0,232,126,0.4);
+    :root{
+      --bg:#0d0d0d;--bg2:#161616;--bg3:#1e1e1e;--bg4:#262626;
+      --border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.045);
+      --text:#f0f0f0;--text2:#a8a8a8;--muted:#555;
+      --brand:#e03a1e;--brand2:#f04a2a;--brand-bg:rgba(224,58,30,0.10);
+      --blue:#3d8ef0;--blue-bg:rgba(61,142,240,0.10);
+      --green:#3da870;--yellow:#d4a017;
+      --font-d:'Barlow Condensed',sans-serif;
+      --font-b:'Inter',sans-serif;
+      --font-m:'JetBrains Mono',monospace;
+      --r:6px;--rl:10px;
     }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    body{background:var(--bg);color:var(--text);font-family:var(--font-b);font-size:14px;line-height:1.5;min-height:100vh;}
+    ::-webkit-scrollbar{width:4px;height:4px;}
+    ::-webkit-scrollbar-track{background:transparent;}
+    ::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:2px;}
+    .hidden{display:none!important;}
 
-    * { box-sizing: border-box; }
+    /* LOGIN */
+    #loginScreen{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;align-items:center;justify-content:center;transition:opacity .35s,transform .35s;}
+    #loginScreen.hiding{opacity:0;transform:translateY(-12px);pointer-events:none;}
+    #loginScreen.hidden{display:none;}
+    .login-logo-ring{display:inline-flex;align-items:center;justify-content:center;width:54px;height:54px;border-radius:12px;background:var(--brand-bg);border:1px solid rgba(224,58,30,.25);animation:brand-pulse 2.5s ease-in-out infinite;}
+    @keyframes brand-pulse{0%,100%{box-shadow:0 0 0 0 rgba(224,58,30,.3);}50%{box-shadow:0 0 0 8px rgba(224,58,30,0);}}
+    .login-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:2rem;position:relative;overflow:hidden;}
+    .login-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--brand);}
+    .login-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:.7rem .9rem;color:var(--text);font-family:var(--font-b);font-size:.875rem;outline:none;transition:border-color .15s;}
+    .login-input:focus{border-color:var(--brand);}
+    .login-input::placeholder{color:var(--muted);}
+    .login-label{display:block;margin-bottom:.3rem;font-family:var(--font-m);font-size:.62rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+    .login-btn{width:100%;background:var(--brand);color:#fff;font-family:var(--font-d);font-weight:700;font-size:.95rem;letter-spacing:.08em;text-transform:uppercase;padding:.75rem;border:none;border-radius:var(--r);cursor:pointer;transition:all .15s;}
+    .login-btn:hover{background:var(--brand2);transform:translateY(-1px);}
+    .login-error{background:rgba(224,58,30,.1);border:1px solid rgba(224,58,30,.3);border-radius:var(--r);padding:.42rem .75rem;color:var(--brand2);font-family:var(--font-m);font-size:.72rem;display:none;}
+    .login-error.visible{display:block;}
+    .login-divider{display:flex;align-items:center;gap:.6rem;color:var(--muted);font-family:var(--font-m);font-size:.65rem;}
+    .login-divider::before,.login-divider::after{content:'';flex:1;height:1px;background:var(--border);}
+    .toggle-auth{background:none;border:none;color:var(--brand2);cursor:pointer;font-family:var(--font-b);font-size:.8rem;text-decoration:underline;text-underline-offset:2px;}
 
-    body {
-      font-family: 'DM Sans', sans-serif;
-      background: #040710;
-      color: #e2e8f0;
-      min-height: 100vh;
-      overflow-x: hidden;
-    }
+    /* HEADER */
+    #appHeader{background:var(--bg2);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:40;}
+    .header-inner{max-width:1280px;margin:0 auto;padding:.65rem 1.5rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;}
+    .brand-mark{width:30px;height:30px;border-radius:7px;background:var(--brand-bg);border:1px solid rgba(224,58,30,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+    .brand-name{font-family:var(--font-d);font-weight:800;font-size:1.05rem;letter-spacing:.07em;text-transform:uppercase;color:var(--text);line-height:1;}
+    .brand-sub{font-family:var(--font-m);font-size:.55rem;color:var(--muted);line-height:1;margin-top:.12rem;}
+    .nav-tab{display:flex;align-items:center;gap:.32rem;padding:.35rem .78rem;border-radius:var(--r);font-family:var(--font-d);font-size:.82rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);background:none;border:1px solid transparent;cursor:pointer;transition:all .15s;white-space:nowrap;}
+    .nav-tab:hover{color:var(--text);background:var(--bg3);}
+    .nav-tab.active{color:var(--brand);background:var(--brand-bg);border-color:rgba(224,58,30,.25);}
+    .user-chip{display:flex;align-items:center;gap:.42rem;padding:.3rem .62rem;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);cursor:pointer;transition:border-color .15s;}
+    .user-chip:hover{border-color:rgba(255,255,255,.14);}
+    .user-avatar{width:22px;height:22px;border-radius:4px;background:var(--brand);display:flex;align-items:center;justify-content:center;font-family:var(--font-d);font-weight:700;font-size:.68rem;color:#fff;flex-shrink:0;}
+    .user-dropdown{position:absolute;top:calc(100% + .4rem);right:0;background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:.35rem;min-width:175px;box-shadow:0 16px 40px rgba(0,0,0,.5);z-index:60;display:none;animation:dropIn .12s ease;}
+    .user-dropdown.open{display:block;}
+    @keyframes dropIn{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:none}}
+    .dropdown-item{display:flex;align-items:center;gap:.5rem;padding:.45rem .72rem;border-radius:var(--r);font-family:var(--font-b);font-size:.78rem;color:var(--text2);cursor:pointer;transition:all .1s;border:none;background:none;width:100%;text-align:left;}
+    .dropdown-item:hover{background:var(--bg3);color:var(--text);}
+    .dropdown-item.danger{color:rgba(224,58,30,.7);}
+    .dropdown-item.danger:hover{background:var(--brand-bg);color:var(--brand2);}
+    .dropdown-divider{height:1px;background:var(--border2);margin:.28rem 0;}
+    .mobile-nav{display:none;gap:.25rem;padding:.35rem 1rem;border-top:1px solid var(--border);}
+    @media(max-width:767px){.desktop-nav{display:none;}.mobile-nav{display:flex;}}
 
-    /* Animated background grid */
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background-image:
-        linear-gradient(rgba(0,232,126,0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0,232,126,0.04) 1px, transparent 1px);
-      background-size: 48px 48px;
-      pointer-events: none;
-      z-index: 0;
-    }
+    /* UPLOAD */
+    .drop-zone{border:2px dashed var(--border);border-radius:var(--rl);cursor:pointer;transition:all .2s;text-align:center;padding:3.5rem 2rem;}
+    .drop-zone:hover,.drop-zone.drag-active{border-color:var(--brand);background:var(--brand-bg);}
+    .drop-zone-icon{width:60px;height:60px;border-radius:13px;background:var(--bg3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;margin:0 auto 1.1rem;font-size:1.6rem;}
+    .file-card{display:flex;align-items:center;gap:.65rem;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:.65rem .85rem;}
+    .file-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+    .file-card-info{flex:1;min-width:0;}
+    .file-card-info .name{font-family:var(--font-m);font-size:.76rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .file-card-info .size{font-family:var(--font-m);font-size:.59rem;color:var(--muted);margin-top:.1rem;}
+    .file-remove{background:none;border:none;color:var(--muted);cursor:pointer;padding:.18rem .38rem;border-radius:3px;font-size:.7rem;transition:all .15s;}
+    .file-remove:hover{color:var(--brand);background:var(--brand-bg);}
+    .compare-btn{background:var(--brand);color:#fff;font-family:var(--font-d);font-weight:700;font-size:.95rem;letter-spacing:.07em;text-transform:uppercase;padding:.75rem 2.25rem;border:none;border-radius:var(--r);cursor:pointer;transition:all .2s;}
+    .compare-btn:hover{background:var(--brand2);transform:translateY(-1px);box-shadow:0 6px 18px rgba(224,58,30,.3);}
 
-    body::after {
-      content: '';
-      position: fixed;
-      top: -30%;
-      left: -20%;
-      width: 70%;
-      height: 70%;
-      background: radial-gradient(ellipse, rgba(0,232,126,0.06) 0%, transparent 70%);
-      pointer-events: none;
-      z-index: 0;
-      animation: driftBg 20s ease-in-out infinite alternate;
-    }
+    /* SUMMARY CARDS */
+    .summary-card{background:var(--bg2);border:1px solid var(--border);border-top:2px solid var(--card-accent,var(--brand));border-radius:var(--rl);padding:.85rem .95rem;}
+    .summary-card-hd{display:flex;align-items:center;gap:.38rem;margin-bottom:.55rem;}
+    .summary-icon{font-size:.82rem;line-height:1;}
+    .summary-label{font-family:var(--font-d);font-size:.68rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);}
+    .summary-act-list{display:flex;flex-direction:column;gap:.33rem;}
+    .summary-act-row{display:flex;align-items:center;gap:.38rem;}
+    .summary-act-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+    .summary-act-name{font-family:var(--font-m);font-size:.55rem;color:var(--muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .summary-act-val{font-family:var(--font-d);font-weight:700;font-size:.92rem;line-height:1;white-space:nowrap;}
+    .summary-act-val .unit{font-family:var(--font-m);font-size:.5rem;font-weight:400;opacity:.5;margin-left:.1em;}
 
-    @keyframes driftBg {
-      from { transform: translate(0, 0) scale(1); }
-      to   { transform: translate(10%, 10%) scale(1.1); }
-    }
+    /* ZONE BARS — Garmin/Suunto style */
+    .zone-panel{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;}
+    .zone-hd{padding:1rem 1.25rem .6rem;border-bottom:1px solid var(--border2);}
+    .zone-hd-title{font-family:var(--font-d);font-size:1rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--text);display:flex;align-items:center;gap:.5rem;line-height:1;}
+    .zone-hd-title svg{width:16px;height:16px;flex-shrink:0;}
+    .zone-hd-title .zone-icon{font-size:1rem;line-height:1;}
+    .zone-hd-sub{font-family:var(--font-b);font-size:.7rem;color:var(--muted);margin-top:.3rem;}
+    .zone-tabs{display:flex;gap:.22rem;padding:.6rem 1.25rem .3rem;}
+    .zone-tab{padding:.22rem .65rem;border-radius:4px;font-family:var(--font-d);font-size:.7rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;background:none;border:1px solid transparent;color:var(--muted);cursor:pointer;transition:all .15s;}
+    .zone-tab.active{color:var(--text);background:var(--bg3);border-color:var(--border);}
+    .zone-rows{padding:.5rem 1.25rem 1.1rem;display:flex;flex-direction:column;gap:.45rem;}
+    /* New zone row layout — label | bar with pct embedded | range */
+    .zone-row{display:grid;grid-template-columns:28px 1fr 80px;align-items:center;gap:.55rem;}
+    .zone-lbl{font-family:var(--font-d);font-size:.82rem;font-weight:800;color:var(--muted);letter-spacing:.03em;}
+    .zone-bar-wrap{position:relative;}
+    .zone-bar-track{height:18px;background:rgba(255,255,255,0.05);border-radius:4px;overflow:hidden;}
+    .zone-bar-fill{height:100%;border-radius:4px;transition:width 1s cubic-bezier(.34,1.1,.64,1);width:0;position:relative;}
+    /* pct label inside the bar */
+    .zone-bar-fill::after{content:attr(data-pct);position:absolute;right:7px;top:50%;transform:translateY(-50%);font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:.75rem;color:rgba(0,0,0,0.7);white-space:nowrap;pointer-events:none;}
+    /* when bar < 18% the pct goes outside */
+    .zone-bar-fill.pct-outside::after{right:auto;left:calc(100% + 5px);color:var(--text2);}
+    .zone-range{font-family:var(--font-m);font-size:.56rem;color:var(--muted);text-align:right;white-space:nowrap;line-height:1.3;}
+    .zone-empty{padding:1.4rem 1.2rem;font-family:var(--font-m);font-size:.7rem;color:var(--muted);text-align:center;}
 
-    .content-layer { position: relative; z-index: 1; }
+    /* Zone responsive & accent borders */
+    @media(max-width:640px){#zoneRow{grid-template-columns:1fr!important;}}
+    .zone-panel#hrZonePanel{border-top:2px solid var(--brand);}
+    .zone-panel#paceZonePanel{border-top:2px solid var(--blue);}
 
-    /* Drop Zone */
-    #dropZone {
-      border: 2px dashed rgba(0,232,126,0.3);
-      transition: all 0.3s ease;
-      background: linear-gradient(135deg, rgba(13,20,38,0.8), rgba(8,13,26,0.9));
-    }
-    #dropZone.drag-over {
-      border-color: var(--accent);
-      background: var(--accent-dim);
-      transform: scale(1.01);
-      box-shadow: 0 0 40px var(--accent-glow);
-    }
+    /* PANEL */
+    .panel{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;}
+    .glass-panel{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);}
+    .panel-hd{padding:.82rem 1.2rem;border-bottom:1px solid var(--border2);display:flex;align-items:center;justify-content:space-between;gap:.6rem;}
+    .panel-hd-title{font-family:var(--font-d);font-size:.87rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text);display:flex;align-items:center;gap:.45rem;}
+    .panel-hd-title svg{width:16px;height:16px;flex-shrink:0;}
 
-    /* Neon glow for key elements */
-    .glow-accent { box-shadow: 0 0 20px var(--accent-glow); }
-    .text-glow { text-shadow: 0 0 20px var(--accent-glow); }
+    /* TABLE */
+    .comp-th-chip{display:inline-flex;align-items:center;gap:.3rem;background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:.2rem .58rem;white-space:nowrap;}
+    .comp-th-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+    .comp-th-name{font-family:var(--font-m);font-size:.62rem;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .metric-label{font-family:var(--font-b);font-size:.76rem;color:var(--text2);padding:.58rem 1.2rem .58rem 0;vertical-align:middle;white-space:nowrap;}
+    .metric-icon{margin-right:.38rem;font-size:.75rem;}
+    .best-val{display:inline-flex;align-items:center;gap:.22rem;font-family:var(--font-d);font-weight:700;font-size:.83rem;padding:.13rem .46rem;border-radius:3px;border:1px solid;}
+    .best-crown{font-size:.54rem;opacity:.7;}
+    .normal-val{font-family:var(--font-m);font-size:.73rem;color:var(--muted);}
+    #compTable tbody tr{border-bottom:1px solid var(--border2);transition:background .1s;}
+    #compTable tbody tr:hover{background:var(--bg3);}
+    #compTable tbody tr:last-child{border-bottom:none;}
 
-    /* Workout pill badges */
-    .workout-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 12px;
-      border-radius: 999px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 11px;
-      font-weight: 600;
-      border: 1px solid currentColor;
-    }
+    /* CHART */
+    .metric-btn{font-family:var(--font-d);font-size:.75rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;padding:.28rem .72rem;border-radius:4px;background:var(--bg3);border:1px solid var(--border);color:var(--muted);cursor:pointer;transition:all .15s;}
+    .metric-btn.active{background:var(--brand-bg);border-color:rgba(224,58,30,.35);color:var(--brand);}
+    .axis-btn{background:var(--bg3);border:1px solid var(--border);color:var(--muted);font-family:var(--font-d);font-size:.75rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;padding:.28rem .72rem;border-radius:4px;cursor:pointer;transition:all .15s;}
+    .axis-btn.active{background:var(--brand-bg);border-color:rgba(224,58,30,.3);color:var(--brand);}
 
-    /* Stat card */
-    .stat-card {
-      background: linear-gradient(135deg, #0d1426, #080d1a);
-      border: 1px solid rgba(255,255,255,0.07);
-      border-radius: 16px;
-      transition: all 0.3s;
-      position: relative;
-      overflow: hidden;
-    }
-    .stat-card::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 2px;
-      background: linear-gradient(90deg, transparent, var(--accent), transparent);
-      opacity: 0;
-      transition: opacity 0.3s;
-    }
-    .stat-card:hover::before { opacity: 1; }
-    .stat-card:hover { border-color: rgba(0,232,126,0.2); transform: translateY(-2px); }
+    /* MAP */
+    #mapSection{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;margin-bottom:1rem;}
+    #mapSection .map-header{padding:.82rem 1.2rem;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border2);}
+    #routeMap{height:340px;width:100%;background:#0a0a0a;}
+    .leaflet-container{background:#0a0a0a!important;font-family:var(--font-m)!important;}
+    .leaflet-control-zoom a{background:var(--bg2)!important;border-color:var(--border)!important;color:var(--text2)!important;}
+    .leaflet-control-zoom a:hover{background:var(--bg3)!important;color:var(--text)!important;}
+    .leaflet-control-attribution{background:rgba(13,13,13,.85)!important;color:var(--muted)!important;font-size:.5rem!important;}
+    .leaflet-control-attribution a{color:var(--muted)!important;}
+    .map-tooltip{background:var(--bg2)!important;border:1px solid var(--border)!important;border-radius:5px!important;color:var(--text)!important;font-family:var(--font-m)!important;font-size:.63rem!important;padding:.28rem .55rem!important;box-shadow:0 8px 20px rgba(0,0,0,.5)!important;}
+    .map-legend{display:flex;flex-wrap:wrap;gap:.5rem;padding:.62rem 1.2rem;border-top:1px solid var(--border2);}
+    .map-legend-item{display:flex;align-items:center;gap:.35rem;font-family:var(--font-m);font-size:.6rem;color:var(--muted);}
+    .map-legend-line{width:16px;height:3px;border-radius:2px;}
 
-    /* Chart container */
-    .chart-wrap {
-      background: linear-gradient(135deg, #0d1426, #080d1a);
-      border: 1px solid rgba(255,255,255,0.07);
-      border-radius: 16px;
-      padding: 24px;
-    }
+    /* HISTORY */
+    .history-card{background:var(--bg2);border:1px solid var(--border);border-left:3px solid var(--accent,var(--brand));border-radius:var(--rl);padding:.9rem 1rem;cursor:pointer;transition:all .18s;}
+    .history-card:hover{background:var(--bg3);transform:translateY(-1px);}
+    .history-badge{display:inline-flex;align-items:center;gap:.27rem;background:var(--brand-bg);border:1px solid rgba(224,58,30,.2);border-radius:4px;padding:.15rem .5rem;font-family:var(--font-d);font-size:.68rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--brand2);}
+    .history-stat{display:flex;flex-direction:column;gap:.08rem;}
+    .history-stat-val{font-family:var(--font-d);font-weight:700;font-size:.98rem;color:var(--text);line-height:1;}
+    .history-stat-label{font-family:var(--font-m);font-size:.55rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;}
+    .history-empty{text-align:center;padding:3.5rem 2rem;color:var(--muted);}
+    .history-empty-icon{width:48px;height:48px;margin:0 auto 1rem;background:var(--bg3);border-radius:var(--r);display:flex;align-items:center;justify-content:center;}
+    .history-delete-btn{background:none;border:1px solid transparent;border-radius:4px;color:var(--muted);padding:.2rem .48rem;font-size:.62rem;font-family:var(--font-m);cursor:pointer;transition:all .15s;}
+    .history-delete-btn:hover{background:var(--brand-bg);color:var(--brand);border-color:rgba(224,58,30,.3);}
+    .history-search{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:.55rem .95rem;color:var(--text);font-family:var(--font-m);font-size:.76rem;outline:none;transition:border-color .15s;width:100%;}
+    .history-search:focus{border-color:var(--brand);}
+    .history-search::placeholder{color:var(--muted);}
+    .filter-chip{background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:.24rem .72rem;font-family:var(--font-d);font-size:.7rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);cursor:pointer;transition:all .15s;white-space:nowrap;}
+    .filter-chip.active{background:var(--brand-bg);border-color:rgba(224,58,30,.3);color:var(--brand);}
+    .history-list{max-height:64vh;overflow-y:auto;}
 
-    /* Map */
-    #mapContainer {
-      border-radius: 16px;
-      overflow: hidden;
-      border: 1px solid rgba(0,232,126,0.2);
-    }
-
-    /* Table */
-    .compare-table th {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 11px;
-      letter-spacing: 0.1em;
-      color: rgba(0,232,126,0.7);
-      text-transform: uppercase;
-      padding: 12px 16px;
-      border-bottom: 1px solid rgba(255,255,255,0.08);
-    }
-    .compare-table td {
-      padding: 14px 16px;
-      border-bottom: 1px solid rgba(255,255,255,0.04);
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 13px;
-    }
-    .compare-table tr:last-child td { border-bottom: none; }
-    .compare-table tr:hover td { background: rgba(0,232,126,0.04); }
-
-    /* Scrollbar */
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: #080d1a; }
-    ::-webkit-scrollbar-thumb { background: rgba(0,232,126,0.3); border-radius: 3px; }
-
-    /* Loader pulse */
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .spinner { animation: spin 0.8s linear infinite; }
-
-    /* Slide in animation */
-    @keyframes slideUp {
-      from { opacity: 0; transform: translateY(30px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-    .slide-up { animation: slideUp 0.5s ease forwards; }
-
-    /* Tab pills */
-    .tab-btn {
-      padding: 8px 20px;
-      border-radius: 8px;
-      font-size: 13px;
-      font-weight: 500;
-      transition: all 0.2s;
-      color: rgba(255,255,255,0.5);
-      cursor: pointer;
-      border: 1px solid transparent;
-    }
-    .tab-btn.active {
-      background: var(--accent-dim);
-      border-color: rgba(0,232,126,0.3);
-      color: var(--accent);
-    }
-    .tab-btn:hover:not(.active) { color: rgba(255,255,255,0.8); }
-
-    /* Leaflet dark overrides */
-    .leaflet-container { background: #080d1a !important; }
-    .leaflet-tile { filter: brightness(0.7) saturate(0.5) hue-rotate(200deg); }
-
-    /* Progress bar */
-    .progress-bar {
-      height: 4px;
-      background: rgba(255,255,255,0.08);
-      border-radius: 2px;
-      overflow: hidden;
-    }
-    .progress-fill {
-      height: 100%;
-      border-radius: 2px;
-      transition: width 0.6s ease;
-    }
-
-    /* Toast */
-    #toast {
-      position: fixed;
-      bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%) translateY(100px);
-      background: #0d1426;
-      border: 1px solid rgba(0,232,126,0.3);
-      color: #e2e8f0;
-      padding: 12px 24px;
-      border-radius: 12px;
-      font-size: 14px;
-      z-index: 9999;
-      transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
-      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-    }
-    #toast.show { transform: translateX(-50%) translateY(0); }
-
-    /* Light mode support */
-    html:not(.dark) body {
-      background: #f0f4f8;
-      color: #1a2235;
-    }
-    html:not(.dark) body::before {
-      background-image:
-        linear-gradient(rgba(0,150,80,0.06) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0,150,80,0.06) 1px, transparent 1px);
-    }
-    html:not(.dark) .stat-card,
-    html:not(.dark) .chart-wrap {
-      background: linear-gradient(135deg, #ffffff, #f8fafc);
-      border-color: rgba(0,0,0,0.08);
-    }
-    html:not(.dark) .compare-table th { color: #007d41; }
-    html:not(.dark) .compare-table td { color: #243558; }
-    html:not(.dark) #dropZone { background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(240,244,248,0.9)); }
-    html:not(.dark) .leaflet-tile { filter: none; }
+    /* CHALLENGE */
+    .challenge-btn{display:inline-flex;align-items:center;gap:.3rem;background:var(--blue-bg);border:1px solid rgba(61,142,240,.25);border-radius:4px;padding:.24rem .6rem;font-family:var(--font-d);font-size:.7rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--blue);cursor:pointer;transition:all .15s;white-space:nowrap;}
+    .challenge-btn:hover{border-color:rgba(61,142,240,.45);}
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.82);backdrop-filter:blur(8px);z-index:200;display:flex;align-items:center;justify-content:center;padding:1.5rem;animation:fadeIn .18s ease;}
+    .modal-overlay.hiding{animation:fadeOut .18s ease forwards;}
+    @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+    @keyframes fadeOut{from{opacity:1}to{opacity:0}}
+    .modal-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);width:100%;max-width:440px;position:relative;overflow:hidden;box-shadow:0 28px 60px rgba(0,0,0,.6);animation:slideUp .2s cubic-bezier(.34,1.4,.64,1);}
+    .modal-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--brand);}
+    @keyframes slideUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+    .modal-body{padding:1.5rem;}
+    .modal-close{position:absolute;top:.78rem;right:.78rem;background:var(--bg3);border:1px solid var(--border);border-radius:4px;color:var(--muted);width:26px;height:26px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.7rem;transition:all .15s;}
+    .modal-close:hover{background:var(--brand-bg);color:var(--brand);border-color:rgba(224,58,30,.3);}
+    .link-box{display:flex;gap:.38rem;background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:.12rem .12rem .12rem .68rem;align-items:center;}
+    .link-box input{flex:1;background:none;border:none;outline:none;font-family:var(--font-m);font-size:.67rem;color:var(--muted);min-width:0;}
+    .link-copy-btn{flex-shrink:0;background:var(--brand);color:#fff;border:none;border-radius:4px;padding:.42rem .82rem;font-family:var(--font-d);font-weight:700;font-size:.75rem;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;transition:all .15s;white-space:nowrap;}
+    .link-copy-btn:hover{background:var(--brand2);}
+    .link-copy-btn.copied{background:var(--green);}
+    .share-option{display:flex;align-items:center;gap:.6rem;padding:.62rem .78rem;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);cursor:pointer;transition:all .15s;text-decoration:none;}
+    .share-option:hover{background:var(--bg4);}
+    .share-option-icon{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0;}
+    .share-option-label{font-family:var(--font-d);font-weight:600;font-size:.8rem;letter-spacing:.03em;color:var(--text);}
+    .share-option-sub{font-family:var(--font-m);font-size:.57rem;color:var(--muted);margin-top:.07rem;}
+    #challengeBanner{display:none;background:var(--blue-bg);border:1px solid rgba(61,142,240,.22);border-radius:var(--r);padding:.82rem 1.05rem;margin-bottom:1.05rem;animation:slideDown .3s ease;}
+    #challengeBanner.visible{display:flex;align-items:center;gap:.82rem;}
+    @keyframes slideDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+    .challenge-pulse{width:36px;height:36px;border-radius:8px;background:var(--blue-bg);border:1px solid rgba(61,142,240,.25);display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;}
+    .challenge-accept-btn{flex-shrink:0;background:var(--blue);color:#fff;border:none;border-radius:4px;padding:.42rem .9rem;font-family:var(--font-d);font-weight:700;font-size:.78rem;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;transition:all .15s;white-space:nowrap;}
+    .challenge-accept-btn:hover{opacity:.85;}
+    #toast{transition:opacity .3s;}
+    #toast.visible{opacity:1;}
   </style>
 </head>
 <body>
 
-<div class="content-layer min-h-screen">
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div style="width:100%;max-width:375px;padding:1.5rem;">
+    <div style="text-align:center;margin-bottom:1.6rem;">
+      <div class="login-logo-ring" style="margin:0 auto .85rem;">
+        <svg width="26" height="26" viewBox="0 0 28 28" fill="none">
+          <path d="M4 20 L9 12 L14 15 L19 7 L24 14" stroke="#e03a1e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="9" cy="12" r="2" fill="#e03a1e"/>
+          <circle cx="19" cy="7" r="2" fill="#e03a1e" opacity=".5"/>
+        </svg>
+      </div>
+      <div style="font-family:var(--font-d);font-weight:800;font-size:1.55rem;letter-spacing:.07em;text-transform:uppercase;line-height:1;">TrackLab</div>
+      <div style="font-family:var(--font-m);font-size:.58rem;color:var(--muted);margin-top:.28rem;letter-spacing:.07em;">PERFORMANCE ANALYTICS</div>
+    </div>
+    <div class="login-card">
+      <div id="loginMode">
+        <div style="font-family:var(--font-d);font-weight:700;font-size:1.25rem;margin-bottom:.22rem;">Bem-vindo de volta</div>
+        <div style="font-family:var(--font-m);font-size:.68rem;color:var(--muted);margin-bottom:1.4rem;">Entre na sua conta para continuar</div>
+        <div id="loginError" class="login-error" style="margin-bottom:.85rem;"></div>
+        <div style="display:flex;flex-direction:column;gap:.72rem;">
+          <div><label class="login-label" for="loginEmail">Email</label><input id="loginEmail" type="email" class="login-input" placeholder="atleta@tracklab.io"/></div>
+          <div><label class="login-label" for="loginPass">Senha</label><input id="loginPass" type="password" class="login-input" placeholder="••••••••"/></div>
+        </div>
+        <button class="login-btn" style="margin-top:1.3rem;" onclick="doLogin()">Entrar</button>
+        <div class="login-divider" style="margin:1.1rem 0;">ou</div>
+        <p style="text-align:center;font-family:var(--font-m);font-size:.7rem;color:var(--muted);">Não tem conta? <button class="toggle-auth" onclick="switchToRegister()">Criar conta</button></p>
+      </div>
+      <div id="registerMode" style="display:none;">
+        <div style="font-family:var(--font-d);font-weight:700;font-size:1.25rem;margin-bottom:.22rem;">Criar conta</div>
+        <div style="font-family:var(--font-m);font-size:.68rem;color:var(--muted);margin-bottom:1.4rem;">Comece a rastrear sua performance</div>
+        <div id="registerError" class="login-error" style="margin-bottom:.85rem;"></div>
+        <div style="display:flex;flex-direction:column;gap:.72rem;">
+          <div><label class="login-label">Nome</label><input id="regName" type="text" class="login-input" placeholder="Seu nome"/></div>
+          <div><label class="login-label">Email</label><input id="regEmail" type="email" class="login-input" placeholder="atleta@tracklab.io"/></div>
+          <div><label class="login-label">Senha</label><input id="regPass" type="password" class="login-input" placeholder="Mínimo 6 caracteres"/></div>
+        </div>
+        <button class="login-btn" style="margin-top:1.3rem;" onclick="doRegister()">Criar conta</button>
+        <p style="text-align:center;font-family:var(--font-m);font-size:.7rem;color:var(--muted);margin-top:1rem;">Já tem conta? <button class="toggle-auth" onclick="switchToLogin()">Entrar</button></p>
+      </div>
+    </div>
+    <p style="text-align:center;font-family:var(--font-m);font-size:.58rem;color:var(--muted);margin-top:1.1rem;opacity:.45;">Demo: qualquer email + senha ≥ 6 chars</p>
+  </div>
+</div>
 
-  <!-- HEADER -->
-  <header class="sticky top-0 z-50 backdrop-blur-xl bg-[#040710]/80 border-b border-white/5">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:var(--accent-dim);border:1px solid rgba(0,232,126,0.3)">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00e87e" stroke-width="2.5">
-            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+<!-- HEADER -->
+<header id="appHeader" style="display:none;">
+  <div class="header-inner">
+    <div style="display:flex;align-items:center;gap:.45rem;">
+      <div style="display:flex;align-items:center;gap:.55rem;">
+        <div class="brand-mark">
+          <svg width="17" height="17" viewBox="0 0 28 28" fill="none">
+            <path d="M4 20 L9 12 L14 15 L19 7 L24 14" stroke="#e03a1e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="9" cy="12" r="2" fill="#e03a1e"/>
           </svg>
         </div>
         <div>
-          <h1 class="font-display text-2xl leading-none" style="color:var(--accent)" class="text-glow">ENDURANCEIQ</h1>
-          <p class="text-[10px] text-white/30 tracking-widest font-mono uppercase">Comparador de Treinos</p>
+          <div class="brand-name">TrackLab</div>
+          <div class="brand-sub">PERFORMANCE ANALYTICS</div>
         </div>
       </div>
-      <div class="flex items-center gap-3">
-        <button id="themeToggle" class="w-9 h-9 rounded-lg flex items-center justify-center border border-white/10 hover:border-white/20 transition-colors text-white/50 hover:text-white/80">
-          <svg id="sunIcon" class="hidden" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-          <svg id="moonIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <nav style="display:flex;gap:.22rem;margin-left:.45rem;" class="desktop-nav">
+        <button class="nav-tab active" id="tabUpload" onclick="switchTab('upload')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+          Carregar
         </button>
-        <button id="shareBtn" class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all" style="background:var(--accent-dim);border:1px solid rgba(0,232,126,0.3);color:var(--accent)" onmouseenter="this.style.background='rgba(0,232,126,0.25)'" onmouseleave="this.style.background='var(--accent-dim)'">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-          Convidar Amigo
+        <button class="nav-tab" id="tabHistory" onclick="switchTab('history')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Histórico
         </button>
-      </div>
+      </nav>
     </div>
-  </header>
-
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8">
-
-    <!-- UPLOAD ZONE -->
-    <section id="uploadSection">
-      <div id="dropZone" class="rounded-2xl p-12 text-center cursor-pointer relative" onclick="document.getElementById('fileInput').click()">
-        <input type="file" id="fileInput" accept=".gpx,.tcx" multiple class="hidden" />
-
-        <div class="flex flex-col items-center gap-4">
-          <div class="w-16 h-16 rounded-2xl flex items-center justify-center" style="background:var(--accent-dim);border:1px solid rgba(0,232,126,0.2)">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#00e87e" stroke-width="1.8">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="17 8 12 3 7 8"/>
-              <line x1="12" y1="3" x2="12" y2="15"/>
-            </svg>
-          </div>
-          <div>
-            <p class="text-lg font-semibold text-white/80">Arraste seus arquivos aqui</p>
-            <p class="text-sm text-white/40 mt-1">ou clique para selecionar</p>
-          </div>
-          <div class="flex gap-2 flex-wrap justify-center">
-            <span class="workout-pill" style="color:#00e87e;border-color:rgba(0,232,126,0.3)">GPX</span>
-            <span class="workout-pill" style="color:#60a5fa;border-color:rgba(96,165,250,0.3)">TCX</span>
-            <span class="workout-pill" style="color:#f59e0b;border-color:rgba(245,158,11,0.3)">Múltiplos Arquivos</span>
-          </div>
-          <p class="text-xs text-white/25 font-mono">Corrida · Ciclismo · Trilha</p>
+    <div style="display:flex;align-items:center;gap:.55rem;">
+      <button id="clearBtn" class="hidden" style="font-family:var(--font-m);font-size:.66rem;color:var(--muted);border:1px solid var(--border);background:none;border-radius:var(--r);padding:.28rem .65rem;cursor:pointer;transition:all .15s;" onmouseover="this.style.color='var(--brand)';this.style.borderColor='rgba(224,58,30,.35)'" onmouseout="this.style.color='var(--muted)';this.style.borderColor='var(--border)'">✕ Limpar</button>
+      <div style="position:relative;">
+        <div class="user-chip" onclick="toggleDropdown()" id="userChip">
+          <div class="user-avatar" id="userAvatar">?</div>
+          <span style="font-family:var(--font-m);font-size:.68rem;color:var(--text2);" id="userNameDisplay">Usuário</span>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
-      </div>
-
-      <!-- Loaded files list -->
-      <div id="fileList" class="mt-4 space-y-2 hidden"></div>
-    </section>
-
-    <!-- LOADING STATE -->
-    <div id="loadingState" class="hidden text-center py-12">
-      <svg class="spinner w-10 h-10 mx-auto mb-4" style="color:var(--accent)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
-      </svg>
-      <p class="text-white/50 text-sm font-mono">Processando arquivos...</p>
-    </div>
-
-    <!-- DASHBOARD -->
-    <div id="dashboard" class="hidden space-y-8 slide-up">
-
-      <!-- STATS TABLE -->
-      <section>
-        <div class="flex items-center justify-between mb-4">
-          <h2 class="font-display text-2xl" style="color:var(--accent)">COMPARATIVO GERAL</h2>
-          <button id="clearBtn" class="text-xs text-white/30 hover:text-red-400 transition-colors font-mono flex items-center gap-1">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-            Limpar tudo
+        <div class="user-dropdown" id="userDropdown">
+          <div style="padding:.52rem .75rem .42rem;border-bottom:1px solid var(--border2);margin-bottom:.3rem;">
+            <div style="font-family:var(--font-d);font-weight:700;font-size:.88rem;color:var(--text);" id="dropdownName">Nome</div>
+            <div style="font-family:var(--font-m);font-size:.6rem;color:var(--muted);" id="dropdownEmail">email</div>
+          </div>
+          <button class="dropdown-item" onclick="switchTab('history');toggleDropdown(false);">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Histórico
+          </button>
+          <div class="dropdown-divider"></div>
+          <button class="dropdown-item danger" onclick="doLogout()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Sair
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+  <nav class="mobile-nav">
+    <button class="nav-tab active" id="tabUploadMob" onclick="switchTab('upload')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>Carregar</button>
+    <button class="nav-tab" id="tabHistoryMob" onclick="switchTab('history')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Histórico</button>
+  </nav>
+</header>
 
-        <div class="stat-card overflow-x-auto">
-          <table class="compare-table w-full min-w-[700px]">
-            <thead>
-              <tr>
-                <th class="text-left">Treino</th>
-                <th class="text-right">Distância</th>
-                <th class="text-right">Duração</th>
-                <th class="text-right">Pace Médio</th>
-                <th class="text-right">Vel. Máx.</th>
-                <th class="text-right">Elev. Ganho</th>
-                <th class="text-right">Calorias</th>
-              </tr>
-            </thead>
-            <tbody id="statsTableBody"></tbody>
-          </table>
+<!-- MAIN -->
+<main id="appMain" style="display:none;max-width:1280px;margin:0 auto;padding:1.6rem 1.5rem;">
+
+  <!-- UPLOAD TAB -->
+  <div id="uploadTab">
+    <section id="uploadSection">
+      <div style="text-align:center;margin-bottom:1.9rem;">
+        <div style="font-family:var(--font-d);font-size:2.3rem;font-weight:800;letter-spacing:.02em;line-height:1;margin-bottom:.45rem;">Carregue suas <span style="color:var(--brand);">atividades</span></div>
+        <p style="font-family:var(--font-m);font-size:.72rem;color:var(--muted);">Suporte a arquivos .TCX e .GPX · Múltiplos arquivos simultâneos</p>
+      </div>
+      <div id="dropZone" class="drop-zone" onclick="document.getElementById('fileInput').click()">
+        <div class="drop-zone-icon">📂</div>
+        <div style="font-family:var(--font-d);font-size:1.1rem;font-weight:700;color:var(--text);margin-bottom:.38rem;">Arraste arquivos aqui</div>
+        <div style="font-family:var(--font-m);font-size:.7rem;color:var(--muted);margin-bottom:.22rem;">ou clique para selecionar · .tcx, .gpx</div>
+        <div style="font-family:var(--font-m);font-size:.62rem;color:var(--muted);opacity:.55;">1 arquivo para visualizar · 2+ para comparar</div>
+        <input type="file" id="fileInput" multiple accept=".tcx,.gpx" style="display:none;"/>
+      </div>
+      <div id="fileList" class="hidden" style="margin-top:.9rem;display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:.55rem;"></div>
+      <div style="margin-top:1.35rem;text-align:center;">
+        <button id="compareBtn" class="hidden compare-btn">Comparar Atividades →</button>
+      </div>
+    </section>
+
+    <!-- DASHBOARD -->
+    <section id="dashboard" class="hidden" style="margin-top:.5rem;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.1rem;">
+        <button id="backBtn" style="font-family:var(--font-m);font-size:.7rem;color:var(--muted);background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:.38rem;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">← Carregar outros arquivos</button>
+        <span style="font-family:var(--font-m);font-size:.62rem;color:var(--muted);" id="activityCount"></span>
+      </div>
+
+      <!-- Summary cards -->
+      <div id="summaryCards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:.55rem;margin-bottom:1rem;"></div>
+
+      <!-- Zone charts row -->
+      <div id="zoneRow" style="display:grid;grid-template-columns:1fr 1fr;gap:.9rem;margin-bottom:1rem;">
+        <!-- Heart Rate Zones -->
+        <div class="zone-panel" id="hrZonePanel">
+          <div class="zone-hd">
+            <div class="zone-hd-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2.2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              Heart Rate Zones
+            </div>
+            <div id="hrZoneSub" class="zone-hd-sub">—</div>
+          </div>
+          <div class="zone-tabs" id="hrZoneTabs"></div>
+          <div class="zone-rows" id="hrZoneRows"></div>
         </div>
-      </section>
+        <!-- Pace Zones -->
+        <div class="zone-panel" id="paceZonePanel">
+          <div class="zone-hd">
+            <div class="zone-hd-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Pace Zones
+            </div>
+            <div id="paceZoneSub" class="zone-hd-sub">—</div>
+          </div>
+          <div class="zone-tabs" id="paceZoneTabs"></div>
+          <div class="zone-rows" id="paceZoneRows"></div>
+        </div>
+      </div>
 
-      <!-- MINI KPI CARDS -->
-      <div id="kpiCards" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3"></div>
-
-      <!-- CHARTS -->
-      <section>
-        <div class="flex items-center gap-2 mb-4 flex-wrap">
-          <h2 class="font-display text-2xl" style="color:var(--accent)">ANÁLISE GRÁFICA</h2>
-          <div class="ml-auto flex gap-2">
-            <button class="tab-btn active" data-chart="elevation">Elevação</button>
-            <button class="tab-btn" data-chart="speed">Velocidade</button>
-            <button class="tab-btn" data-chart="hr">Freq. Cardíaca</button>
+      <!-- Comparison table -->
+      <div id="compTablePanel" class="panel" style="margin-bottom:1rem;">
+        <div class="panel-hd">
+          <div class="panel-hd-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+            Tabela Comparativa
           </div>
         </div>
-        <div class="chart-wrap">
-          <canvas id="mainChart" height="300"></canvas>
+        <div style="padding:.7rem 1.2rem;overflow-x:auto;">
+          <table style="width:100%;font-size:.78rem;" id="compTable">
+            <thead>
+              <tr style="border-bottom:1px solid var(--border2);">
+                <th style="text-align:left;padding:.45rem 1.2rem .45rem 0;font-family:var(--font-d);font-size:.65rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);">Métrica</th>
+              </tr>
+            </thead>
+            <tbody id="compTableBody"></tbody>
+          </table>
         </div>
-      </section>
+      </div>
 
-      <!-- MAP -->
-      <section>
-        <h2 class="font-display text-2xl mb-4" style="color:var(--accent)">MAPA DE TRAJETOS</h2>
-        <div id="mapContainer" style="height:420px"></div>
-        <div id="mapLegend" class="flex flex-wrap gap-3 mt-3"></div>
-      </section>
+      <!-- Map -->
+      <div id="mapSection" class="hidden">
+        <div class="map-header">
+          <div style="font-family:var(--font-d);font-size:.87rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;display:flex;align-items:center;gap:.45rem;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
+            Trajetos no Mapa
+          </div>
+          <span style="font-family:var(--font-m);font-size:.58rem;color:var(--muted);">● início &nbsp; ◆ fim</span>
+        </div>
+        <div id="routeMap"></div>
+        <div class="map-legend" id="mapLegend"></div>
+      </div>
 
+      <!-- Chart -->
+      <div class="panel">
+        <div class="panel-hd">
+          <div class="panel-hd-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            Gráficos Sobrepostos
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:.32rem;" id="metricBtns"></div>
+        </div>
+        <div style="padding:.82rem 1.2rem;">
+          <div style="display:flex;gap:.32rem;margin-bottom:.9rem;" id="xAxisBtns">
+            <button data-axis="time" class="axis-btn active">Eixo: Tempo</button>
+            <button data-axis="distance" class="axis-btn">Eixo: Distância</button>
+          </div>
+          <div style="position:relative;height:320px;">
+            <canvas id="mainChart"></canvas>
+          </div>
+          <p style="font-family:var(--font-m);font-size:.58rem;color:var(--muted);margin-top:.82rem;text-align:center;">Scroll/pinch para zoom · Clique na legenda para mostrar/ocultar</p>
+        </div>
+      </div>
+    </section>
+  </div><!-- /uploadTab -->
+
+  <!-- HISTORY TAB -->
+  <div id="historyTab" style="display:none;">
+    <div id="challengeBanner">
+      <div class="challenge-pulse">⚔️</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-family:var(--font-d);font-weight:700;font-size:.88rem;color:var(--text);margin-bottom:.15rem;">Desafio recebido! <span id="challengerName" style="color:var(--blue);"></span></div>
+        <div style="font-family:var(--font-m);font-size:.63rem;color:var(--muted);">Faça upload do seu treino para comparar</div>
+      </div>
+      <button class="challenge-accept-btn" onclick="acceptChallenge()">Aceitar →</button>
     </div>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.35rem;">
+      <div>
+        <div style="font-family:var(--font-d);font-weight:800;font-size:1.9rem;letter-spacing:.02em;line-height:1;">Histórico de <span style="color:var(--brand);">Treinos</span></div>
+        <div style="font-family:var(--font-m);font-size:.66rem;color:var(--muted);margin-top:.32rem;">Todas as atividades carregadas e comparadas</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:.55rem;">
+        <span id="historyCount" style="font-family:var(--font-m);font-size:.62rem;color:var(--muted);"></span>
+        <button onclick="clearHistory()" style="font-family:var(--font-m);font-size:.62rem;color:rgba(224,58,30,.55);border:1px solid rgba(224,58,30,.15);background:none;border-radius:var(--r);padding:.28rem .62rem;cursor:pointer;transition:all .15s;" onmouseover="this.style.color='var(--brand)';this.style.borderColor='rgba(224,58,30,.35)'" onmouseout="this.style.color='rgba(224,58,30,.55)';this.style.borderColor='rgba(224,58,30,.15)'">Limpar tudo</button>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.6rem;margin-bottom:1.15rem;">
+      <div style="position:relative;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" style="position:absolute;left:.82rem;top:50%;transform:translateY(-50%);pointer-events:none;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="historySearch" class="history-search" placeholder="Buscar por nome do arquivo..." style="padding-left:2.3rem;" oninput="renderHistory()"/>
+      </div>
+      <div style="display:flex;gap:.38rem;flex-wrap:wrap;" id="historyFilters">
+        <button class="filter-chip active" data-filter="all"    onclick="setFilter(this,'all')">Todos</button>
+        <button class="filter-chip"        data-filter="tcx"    onclick="setFilter(this,'tcx')">TCX</button>
+        <button class="filter-chip"        data-filter="gpx"    onclick="setFilter(this,'gpx')">GPX</button>
+        <button class="filter-chip"        data-filter="recent" onclick="setFilter(this,'recent')">Últimos 7 dias</button>
+      </div>
+    </div>
+    <div class="history-list" id="historyList"></div>
+  </div><!-- /historyTab -->
 
-  </main>
+</main>
 
-  <!-- FOOTER -->
-  <footer class="border-t border-white/5 mt-16 py-6 text-center">
-    <p class="text-xs text-white/20 font-mono">ENDURANCEIQ · PWA · GPX & TCX PARSER · v1.0</p>
-  </footer>
+<!-- CHALLENGE MODAL -->
+<div id="challengeModal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeShareModal()">
+  <div class="modal-card">
+    <button class="modal-close" onclick="closeShareModal()">✕</button>
+    <div class="modal-body">
+      <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.2rem;">
+        <div style="width:38px;height:38px;border-radius:8px;background:var(--brand-bg);border:1px solid rgba(224,58,30,.25);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;">⚔️</div>
+        <div>
+          <div style="font-family:var(--font-d);font-weight:700;font-size:1.05rem;color:var(--text);">Desafiar um amigo</div>
+          <div style="font-family:var(--font-m);font-size:.62rem;color:var(--muted);margin-top:.13rem;">Seu treino será incluído no link</div>
+        </div>
+      </div>
+      <div id="shareActivityPreview" style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:.7rem .85rem;margin-bottom:1rem;display:flex;flex-wrap:wrap;gap:.32rem;"></div>
+      <div style="margin-bottom:1rem;">
+        <label style="font-family:var(--font-m);font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:.42rem;">Link do desafio</label>
+        <div class="link-box">
+          <input type="text" id="shareLink" readonly onclick="this.select()"/>
+          <button class="link-copy-btn" id="copyBtn" onclick="copyShareLink()">Copiar</button>
+        </div>
+      </div>
+      <div>
+        <label style="font-family:var(--font-m);font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:.5rem;">Compartilhar via</label>
+        <div style="display:flex;flex-direction:column;gap:.32rem;">
+          <div class="share-option" onclick="shareViaWhatsApp()">
+            <div class="share-option-icon" style="background:rgba(37,211,102,.1);border:1px solid rgba(37,211,102,.2);">💬</div>
+            <div><div class="share-option-label">WhatsApp</div><div class="share-option-sub">Enviar mensagem com o link</div></div>
+            <svg style="margin-left:auto;opacity:.3;" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+          <div class="share-option" onclick="shareViaNative()">
+            <div class="share-option-icon" style="background:var(--blue-bg);border:1px solid rgba(61,142,240,.2);">📤</div>
+            <div><div class="share-option-label">Compartilhar</div><div class="share-option-sub">Menu nativo do dispositivo</div></div>
+            <svg style="margin-left:auto;opacity:.3;" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+        </div>
+      </div>
+      <p style="font-family:var(--font-m);font-size:.56rem;color:var(--muted);margin-top:.85rem;text-align:center;opacity:.55;">O link expira em 7 dias · Dados codificados no URL</p>
+    </div>
+  </div>
 </div>
 
-<!-- TOAST -->
-<div id="toast"></div>
+<!-- Toast -->
+<div id="toast" class="fixed bottom-5 right-5 z-50 hidden">
+  <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:.6rem .95rem;font-family:var(--font-m);font-size:.76rem;color:var(--text);box-shadow:0 12px 32px rgba(0,0,0,.5);display:flex;align-items:center;gap:.5rem;">
+    <span id="toastIcon">⚠</span><span id="toastMsg"></span>
+  </div>
+</div>
 
-<!-- Scripts -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<script src="app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
 
 <script>
-  // Register service worker
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js').catch(() => {});
+const AUTH_KEY='tracklab_user',USERS_KEY='tracklab_users',HIST_KEY='tracklab_history';
+let currentUser=null,historyFilter='all';
+function getUsers(){try{return JSON.parse(localStorage.getItem(USERS_KEY)||'[]');}catch{return[];}}
+function saveUsers(u){localStorage.setItem(USERS_KEY,JSON.stringify(u));}
+function getHistory(){if(!currentUser)return[];const all=JSON.parse(localStorage.getItem(HIST_KEY)||'{}');return all[currentUser.email]||[];}
+function saveHistory(h){if(!currentUser)return;const all=JSON.parse(localStorage.getItem(HIST_KEY)||'{}');all[currentUser.email]=h;localStorage.setItem(HIST_KEY,JSON.stringify(all));}
+function switchToRegister(){document.getElementById('loginMode').style.display='none';document.getElementById('registerMode').style.display='';}
+function switchToLogin(){document.getElementById('registerMode').style.display='none';document.getElementById('loginMode').style.display='';}
+function showLoginError(m){const e=document.getElementById('loginError');e.textContent=m;e.classList.add('visible');}
+function showRegisterError(m){const e=document.getElementById('registerError');e.textContent=m;e.classList.add('visible');}
+function doLogin(){const email=document.getElementById('loginEmail').value.trim(),pass=document.getElementById('loginPass').value;if(!email||!pass){showLoginError('Preencha todos os campos.');return;}const user=getUsers().find(u=>u.email===email&&u.password===pass);if(!user){showLoginError('Email ou senha incorretos.');return;}currentUser=user;localStorage.setItem(AUTH_KEY,JSON.stringify(user));enterApp();setTimeout(checkIncomingChallenge,300);}
+function doRegister(){const name=document.getElementById('regName').value.trim(),email=document.getElementById('regEmail').value.trim(),pass=document.getElementById('regPass').value;if(!name||!email||!pass){showRegisterError('Preencha todos os campos.');return;}if(pass.length<6){showRegisterError('Senha deve ter pelo menos 6 caracteres.');return;}if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){showRegisterError('Email inválido.');return;}const users=getUsers();if(users.find(u=>u.email===email)){showRegisterError('Este email já está cadastrado.');return;}const user={name,email,password:pass,createdAt:new Date().toISOString()};users.push(user);saveUsers(users);currentUser=user;localStorage.setItem(AUTH_KEY,JSON.stringify(user));enterApp();setTimeout(checkIncomingChallenge,300);}
+function doLogout(){localStorage.removeItem(AUTH_KEY);currentUser=null;document.getElementById('appHeader').style.display='none';document.getElementById('appMain').style.display='none';const ls=document.getElementById('loginScreen');ls.classList.remove('hiding','hidden');ls.style.display='';switchToLogin();document.getElementById('loginEmail').value='';document.getElementById('loginPass').value='';toggleDropdown(false);}
+let appInitialized=false;
+window.addToHistory=addToHistory;
+function enterApp(){const ls=document.getElementById('loginScreen');ls.classList.add('hiding');setTimeout(()=>{ls.classList.add('hidden');ls.style.display='none';},420);document.getElementById('userAvatar').textContent=currentUser.name.charAt(0).toUpperCase();document.getElementById('userNameDisplay').textContent=currentUser.name.split(' ')[0];document.getElementById('dropdownName').textContent=currentUser.name;document.getElementById('dropdownEmail').textContent=currentUser.email;document.getElementById('appHeader').style.display='';document.getElementById('appMain').style.display='';if(!appInitialized){appInitialized=true;if(window.initApp)window.initApp();}switchTab('upload');}
+function toggleDropdown(force){const dd=document.getElementById('userDropdown');dd.classList.toggle('open',force!==undefined?force:!dd.classList.contains('open'));}
+document.addEventListener('click',e=>{if(!e.target.closest('#userChip')&&!e.target.closest('#userDropdown'))toggleDropdown(false);});
+function switchTab(tab){const isU=tab==='upload',isH=tab==='history';document.getElementById('uploadTab').style.display=isU?'':'none';document.getElementById('historyTab').style.display=isH?'':'none';['tabUpload','tabHistory','tabUploadMob','tabHistoryMob'].forEach(id=>{const el=document.getElementById(id);if(!el)return;el.classList.toggle('active',(id.startsWith('tabUpload')&&isU)||(id.startsWith('tabHistory')&&isH));});if(isH)renderHistory();}
+const SPORT_COLORS={running:'#e03a1e',cycling:'#3d8ef0',walking:'#d4a017',swimming:'#3da870',other:'#666'};
+function detectSport(l=''){l=l.toLowerCase();if(l.includes('run')||l.includes('corrida'))return'running';if(l.includes('cycl')||l.includes('bike')||l.includes('cicl'))return'cycling';if(l.includes('walk')||l.includes('caminhada'))return'walking';if(l.includes('swim')||l.includes('natação'))return'swimming';return'other';}
+function sportIcon(s){return{running:'🏃',cycling:'🚴',walking:'🚶',swimming:'🏊',other:'⚡'}[s]||'⚡';}
+function fmtDate(iso){const d=new Date(iso);return d.toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'});}
+function fmtTime(iso){const d=new Date(iso);return d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});}
+function relativeDate(iso){const diff=(Date.now()-new Date(iso))/1000;if(diff<60)return'agora';if(diff<3600)return`${Math.floor(diff/60)}min atrás`;if(diff<86400)return`${Math.floor(diff/3600)}h atrás`;if(diff<604800)return`${Math.floor(diff/86400)}d atrás`;return fmtDate(iso);}
+function sToHMS(s){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=Math.floor(s%60);if(h>0)return`${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;return`${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;}
+function addToHistory(activities){if(!currentUser||!activities.length)return;const hist=getHistory();hist.unshift({id:Date.now().toString(36),date:new Date().toISOString(),activities:activities.map(a=>({id:a.id,filename:a.filename,label:a.label,sport:detectSport(a.label+' '+a.filename),startTime:a.startTime,summary:a.summary,color:a.color}))});saveHistory(hist);}
+function setFilter(btn,filter){historyFilter=filter;document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));btn.classList.add('active');renderHistory();}
+function renderHistory(){
+  const hist=getHistory(),search=(document.getElementById('historySearch')?.value||'').toLowerCase(),now=Date.now(),sevenD=7*24*3600*1000;
+  let filtered=hist.filter(s=>{if(search&&!s.activities.some(a=>a.filename.toLowerCase().includes(search)||(a.label||'').toLowerCase().includes(search)))return false;if(historyFilter==='tcx'&&!s.activities.some(a=>a.filename.toLowerCase().endsWith('.tcx')))return false;if(historyFilter==='gpx'&&!s.activities.some(a=>a.filename.toLowerCase().endsWith('.gpx')))return false;if(historyFilter==='recent'&&(now-new Date(s.date))>sevenD)return false;return true;});
+  const count=document.getElementById('historyCount');if(count)count.textContent=`${filtered.length} sessão${filtered.length!==1?'ões':''}`;
+  const list=document.getElementById('historyList');if(!list)return;
+  if(!filtered.length){list.innerHTML=`<div class="history-empty"><div class="history-empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div style="font-family:var(--font-d);font-size:1.05rem;font-weight:600;color:var(--muted);margin-bottom:.38rem;">${hist.length===0?'Nenhum treino ainda':'Nenhum resultado'}</div><div style="font-family:var(--font-m);font-size:.65rem;color:var(--muted);opacity:.55;">${hist.length===0?'Compare atividades para salvar no histórico':'Tente ajustar os filtros'}</div></div>`;return;}
+  const groups={};filtered.forEach(s=>{const k=fmtDate(s.date);if(!groups[k])groups[k]=[];groups[k].push(s);});
+  let html='';
+  for(const[dk,sessions]of Object.entries(groups)){
+    html+=`<div style="margin-bottom:1.6rem;"><div style="display:flex;align-items:center;gap:.55rem;margin-bottom:.68rem;"><span style="font-family:var(--font-m);font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">${dk}</span><div style="flex:1;height:1px;background:var(--border2);"></div><span style="font-family:var(--font-m);font-size:.56rem;color:var(--muted);opacity:.55;">${sessions.length} sessão${sessions.length!==1?'ões':''}</span></div><div style="display:flex;flex-direction:column;gap:.55rem;">`;
+    sessions.forEach(s=>{
+      const sport=detectSport(s.activities.map(a=>a.label+' '+a.filename).join(' '));
+      const ac=SPORT_COLORS[sport]||'#e03a1e';
+      const td=s.activities.reduce((sum,a)=>sum+(a.summary?.totalDistM||0),0);
+      const tt=Math.max(...s.activities.map(a=>a.summary?.totalSec||0));
+      const hrArr=s.activities.map(a=>a.summary?.avgHR).filter(Boolean);
+      const hr=hrArr.length?Math.round(hrArr.reduce((a,b)=>a+b,0)/hrArr.length):null;
+      html+=`<div class="history-card" style="--accent:${ac};" onclick="loadHistorySession('${s.id}')">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.7rem;margin-bottom:.68rem;">
+          <div style="display:flex;align-items:center;gap:.55rem;">
+            <div style="width:30px;height:30px;border-radius:6px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:.88rem;flex-shrink:0;">${sportIcon(sport)}</div>
+            <div>
+              <div style="font-family:var(--font-d);font-weight:700;font-size:.88rem;color:var(--text);line-height:1.2;">${s.activities.length} ${s.activities.length===1?'atividade':'atividades'}</div>
+              <div style="font-family:var(--font-m);font-size:.56rem;color:var(--muted);margin-top:.12rem;">${fmtTime(s.date)} · ${relativeDate(s.date)}</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:.38rem;">
+            <div class="history-badge">${sportIcon(sport)} ${sport.charAt(0).toUpperCase()+sport.slice(1)}</div>
+            <button class="challenge-btn" onclick="event.stopPropagation();openShareModal('${s.id}')">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+              Desafiar
+            </button>
+            <button class="history-delete-btn" onclick="event.stopPropagation();deleteSession('${s.id}')">✕</button>
+          </div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:.32rem;margin-bottom:.68rem;">
+          ${s.activities.map(a=>`<span style="display:inline-flex;align-items:center;gap:.25rem;background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:.1rem .45rem;font-family:var(--font-m);font-size:.56rem;color:var(--muted);"><span style="width:5px;height:5px;border-radius:50%;background:${a.color};flex-shrink:0;"></span>${a.filename}</span>`).join('')}
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.7rem;padding-top:.68rem;border-top:1px solid var(--border2);">
+          <div class="history-stat"><div class="history-stat-val">${td>=1000?(td/1000).toFixed(2)+' km':Math.round(td)+' m'}</div><div class="history-stat-label">Distância</div></div>
+          <div class="history-stat"><div class="history-stat-val">${sToHMS(tt)}</div><div class="history-stat-label">Duração</div></div>
+          <div class="history-stat"><div class="history-stat-val">${hr?hr+' bpm':'—'}</div><div class="history-stat-label">FC Média</div></div>
+        </div>
+      </div>`;
     });
+    html+='</div></div>';
   }
+  list.innerHTML=html;
+}
+function deleteSession(id){if(!confirm('Remover esta sessão?'))return;saveHistory(getHistory().filter(s=>s.id!==id));renderHistory();}
+function clearHistory(){if(!getHistory().length)return;if(!confirm('Limpar todo o histórico?'))return;saveHistory([]);renderHistory();}
+function loadHistorySession(id){const s=getHistory().find(s=>s.id===id);if(!s)return;toast(`${s.activities.length} atividade(s) · ${fmtDate(s.date)}`,'ok');switchTab('upload');}
+function encodeChallenge(s){try{return btoa(unescape(encodeURIComponent(JSON.stringify({v:1,from:currentUser?.name||'Atleta',created:Date.now(),expires:Date.now()+7*24*3600*1000,activities:s.activities.map(a=>({filename:a.filename,label:a.label,color:a.color,summary:a.summary,coords:a.coords?a.coords.filter((_,i)=>i%5===0):[]}))}))));}catch{return null;}}
+function decodeChallenge(enc){try{return JSON.parse(decodeURIComponent(escape(atob(enc))));}catch{return null;}}
+function buildShareUrl(enc){return`${window.location.href.split('#')[0]}#challenge=${enc}`;}
+let _sharingSessionId=null;
+function openShareModal(sessionId){const s=getHistory().find(s=>s.id===sessionId);if(!s)return;_sharingSessionId=sessionId;document.getElementById('shareActivityPreview').innerHTML=s.activities.map(a=>`<span style="display:inline-flex;align-items:center;gap:.28rem;background:var(--bg4);border:1px solid var(--border);border-radius:4px;padding:.16rem .5rem;font-family:var(--font-m);font-size:.6rem;color:var(--muted);"><span style="width:6px;height:6px;border-radius:50%;background:${a.color};flex-shrink:0;"></span>${a.filename}<span style="opacity:.4;">·</span><span style="color:${a.color};">${a.summary.totalDistM>=1000?(a.summary.totalDistM/1000).toFixed(1)+'km':Math.round(a.summary.totalDistM)+'m'}</span></span>`).join('');const enc=encodeChallenge(s);if(!enc){toast('Erro ao gerar link','error');return;}document.getElementById('shareLink').value=buildShareUrl(enc);const btn=document.getElementById('copyBtn');btn.textContent='Copiar';btn.classList.remove('copied');document.getElementById('challengeModal').style.display='flex';}
+function closeShareModal(){const m=document.getElementById('challengeModal');m.classList.add('hiding');setTimeout(()=>{m.style.display='none';m.classList.remove('hiding');},200);}
+function copyShareLink(){navigator.clipboard.writeText(document.getElementById('shareLink').value).then(()=>{const b=document.getElementById('copyBtn');b.textContent='✓ Copiado!';b.classList.add('copied');setTimeout(()=>{b.textContent='Copiar';b.classList.remove('copied');},2500);}).catch(()=>{document.getElementById('shareLink').select();document.execCommand('copy');toast('Link copiado!','ok');});}
+function shareViaWhatsApp(){const link=document.getElementById('shareLink').value;const name=currentUser?.name.split(' ')[0]||'alguém';window.open(`https://wa.me/?text=${encodeURIComponent(`⚔️ *Desafio TrackLab!*\n${name} te desafia!\n${link}`)}`,'_blank');}
+function shareViaNative(){const link=document.getElementById('shareLink').value;if(navigator.share){navigator.share({title:'⚔️ Desafio TrackLab!',url:link}).catch(()=>{});}else{copyShareLink();toast('Link copiado!','ok');}}
+function checkIncomingChallenge(){const hash=window.location.hash;if(!hash.startsWith('#challenge='))return;const payload=decodeChallenge(hash.slice('#challenge='.length));if(!payload)return;if(payload.expires&&Date.now()>payload.expires){toast('Link de desafio expirou.','warn');window.location.hash='';return;}window._incomingChallenge=payload;const banner=document.getElementById('challengeBanner'),nameEl=document.getElementById('challengerName');if(banner&&nameEl){nameEl.textContent=payload.from?`de ${payload.from}`:'';banner.classList.add('visible');}if(typeof switchTab==='function')switchTab('history');}
+function acceptChallenge(){if(!window._incomingChallenge)return;const payload=window._incomingChallenge;if(window.state){const COLS=['#e03a1e','#3d8ef0','#d4a017','#3da870','#a78bfa'];window.state.activities=payload.activities.map((a,i)=>({...a,id:Math.random().toString(36).slice(2,9),points:[],color:COLS[i%COLS.length],index:i,_fromChallenge:true}));}history.replaceState(null,'',window.location.pathname+window.location.search);document.getElementById('challengeBanner').classList.remove('visible');switchTab('upload');toast(`Treino de ${payload.from} carregado! Faça upload do seu.`,'ok');const fileList=document.getElementById('fileList'),compareBtn=document.getElementById('compareBtn');if(fileList&&compareBtn){fileList.classList.remove('hidden');fileList.style.display='grid';fileList.innerHTML=payload.activities.map((a,i)=>{const c=['#e03a1e','#3d8ef0','#d4a017','#3da870'][i%4];return`<div class="file-card" style="border-color:rgba(61,142,240,.25);"><div class="file-dot" style="background:${c}"></div><div class="file-card-info"><div class="name">${a.filename}</div><div class="size" style="color:var(--blue);">⚔️ Desafio de ${payload.from}</div></div></div>`;}).join('');compareBtn.classList.remove('hidden');compareBtn.textContent='Carregar meu treino e comparar →';}window._incomingChallenge=null;}
+document.addEventListener('DOMContentLoaded',()=>{const saved=localStorage.getItem(AUTH_KEY);if(saved){try{currentUser=JSON.parse(saved);enterApp();setTimeout(checkIncomingChallenge,300);}catch{}}document.getElementById('loginPass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});document.getElementById('loginEmail').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('loginPass').focus();});});
 </script>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
