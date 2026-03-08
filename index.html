@@ -55,16 +55,17 @@
 
     /* HEADER */
     #appHeader{background:rgba(255,255,255,0.92);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:40;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);}
-    .header-inner{max-width:1280px;margin:0 auto;padding:.65rem 1.5rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;}
+    .header-inner{max-width:1280px;margin:0 auto;padding:.65rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:.5rem;overflow:hidden;}
     .brand-mark{width:30px;height:30px;border-radius:8px;background:var(--brand);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 8px rgba(0,71,255,0.3);}
     .brand-name{font-family:var(--font-d);font-weight:800;font-size:1.05rem;letter-spacing:.04em;text-transform:uppercase;color:var(--text);line-height:1;}
     .brand-sub{font-family:var(--font-m);font-size:.55rem;color:var(--muted);line-height:1;margin-top:.12rem;}
     .nav-tab{display:flex;align-items:center;gap:.32rem;padding:.35rem .78rem;border-radius:var(--r);font-family:var(--font-d);font-size:.82rem;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);background:none;border:1.5px solid transparent;cursor:pointer;transition:all .15s;white-space:nowrap;}
     .nav-tab:hover{color:var(--text);background:var(--bg3);}
     .nav-tab.active{color:var(--brand);background:var(--brand-bg);border-color:rgba(0,71,255,0.18);}
-    .user-chip{display:flex;align-items:center;gap:.42rem;padding:.3rem .62rem;background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--r);cursor:pointer;transition:border-color .15s,box-shadow .15s;}
+    .user-chip{display:flex;align-items:center;gap:.42rem;padding:.3rem .62rem;background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--r);cursor:pointer;transition:border-color .15s,box-shadow .15s;flex-shrink:0;}
     .user-chip:hover{border-color:rgba(0,71,255,0.25);box-shadow:0 2px 8px rgba(0,71,255,0.08);}
     .user-avatar{width:22px;height:22px;border-radius:4px;background:var(--brand);display:flex;align-items:center;justify-content:center;font-family:var(--font-d);font-weight:700;font-size:.68rem;color:#fff;flex-shrink:0;}
+    .user-name-display{font-family:var(--font-m);font-size:.68rem;color:var(--text2);}
     .user-dropdown{position:absolute;top:calc(100% + .4rem);right:0;background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--rl);padding:.35rem;min-width:175px;box-shadow:0 16px 40px rgba(0,0,0,0.12),0 4px 12px rgba(0,71,255,0.08);z-index:60;display:none;animation:dropIn .12s ease;}
     .user-dropdown.open{display:block;}
     @keyframes dropIn{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:none}}
@@ -73,8 +74,18 @@
     .dropdown-item.danger{color:rgba(220,38,38,0.7);}
     .dropdown-item.danger:hover{background:rgba(220,38,38,0.06);color:#dc2626;}
     .dropdown-divider{height:1px;background:var(--border2);margin:.28rem 0;}
-    .mobile-nav{display:none;gap:.25rem;padding:.35rem 1rem;border-top:1px solid var(--border);}
-    @media(max-width:767px){.desktop-nav{display:none;}.mobile-nav{display:flex;}}
+    /* Mobile nav — hidden by default, shown only on mobile */
+    .mobile-nav{display:none;}
+    /* Desktop: show desktop nav, hide mobile nav strip */
+    .desktop-nav{display:flex;}
+    @media(max-width:600px){
+      .desktop-nav{display:none!important;}
+      .mobile-nav{display:flex;gap:.25rem;padding:.4rem .75rem;border-top:1px solid var(--border);background:rgba(255,255,255,0.92);}
+      .header-inner{padding:.55rem .75rem;}
+      .brand-sub{display:none;}
+      .user-name-display{display:none;}
+      #clearBtn{display:none!important;}
+    }
 
     /* UPLOAD */
     .drop-zone{border:2px dashed var(--border);border-radius:var(--rl);cursor:pointer;transition:all .2s;text-align:center;padding:3.5rem 2rem;background:var(--bg2);}
@@ -268,8 +279,8 @@
 <!-- HEADER -->
 <header id="appHeader" style="display:none;">
   <div class="header-inner">
-    <div style="display:flex;align-items:center;gap:.45rem;">
-      <div style="display:flex;align-items:center;gap:.55rem;">
+    <div style="display:flex;align-items:center;gap:.45rem;min-width:0;">
+      <div style="display:flex;align-items:center;gap:.55rem;flex-shrink:0;">
         <div class="brand-mark">
           <svg width="17" height="17" viewBox="0 0 28 28" fill="none">
             <path d="M4 20 L9 12 L14 15 L19 7 L24 14" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -292,12 +303,12 @@
         </button>
       </nav>
     </div>
-    <div style="display:flex;align-items:center;gap:.55rem;">
+    <div style="display:flex;align-items:center;gap:.5rem;flex-shrink:0;">
       <button id="clearBtn" class="hidden" style="font-family:var(--font-m);font-size:.66rem;color:var(--muted);border:1.5px solid var(--border);background:none;border-radius:var(--r);padding:.28rem .65rem;cursor:pointer;transition:all .15s;" onmouseover="this.style.color='var(--brand)';this.style.borderColor='rgba(0,71,255,.35)'" onmouseout="this.style.color='var(--muted)';this.style.borderColor='var(--border)'">✕ Limpar</button>
       <div style="position:relative;">
         <div class="user-chip" onclick="toggleDropdown()" id="userChip">
           <div class="user-avatar" id="userAvatar">?</div>
-          <span style="font-family:var(--font-m);font-size:.68rem;color:var(--text2);" id="userNameDisplay">Usuário</span>
+          <span class="user-name-display" id="userNameDisplay">Usuário</span>
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="user-dropdown" id="userDropdown">
@@ -326,6 +337,7 @@
 
 <!-- MAIN -->
 <main id="appMain" style="display:none;max-width:1280px;margin:0 auto;padding:1.6rem 1.5rem;">
+  <style>@media(max-width:600px){#appMain{padding:1rem .75rem!important;}}</style>
 
   <!-- UPLOAD TAB -->
   <div id="uploadTab">
