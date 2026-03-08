@@ -1,5 +1,5 @@
 /* ════════════════════════════════════════════════════════
-   TrackLab — app.js
+   Endurance — app.js
    Lógica principal: parse TCX/GPX, comparação, gráficos,
    localStorage e suporte a PWA.
 ════════════════════════════════════════════════════════ */
@@ -322,7 +322,7 @@ function buildActivity(points, filename, label, startTime) {
 // PERSISTÊNCIA — LOCALSTORAGE
 // ──────────────────────────────────────────────────────
 
-const LS_KEY = 'tracklab_activities';
+const LS_KEY = 'endurance_activities';
 
 /** Salva atividades no LocalStorage (serializa apenas os dados necessários) */
 function saveToLS() {
@@ -704,6 +704,59 @@ function renderDashboard() {
 // MAPA — LEAFLET
 // ──────────────────────────────────────────────────────
 
+// ──────────────────────────────────────────────────────
+// MAPA — CAMADAS
+// ──────────────────────────────────────────────────────
+
+const MAP_LAYERS = {
+  streets: {
+    label: 'Mapa',
+    url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+    attr: '© OpenStreetMap © CARTO',
+    maxZoom: 19,
+  },
+  satellite: {
+    label: 'Satélite',
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    attr: '© Esri, Maxar, Earthstar Geographics',
+    maxZoom: 19,
+  },
+  terrain: {
+    label: 'Relevo',
+    url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+    attr: '© OpenStreetMap © OpenTopoMap',
+    maxZoom: 17,
+  },
+};
+
+let _currentTileLayer = null;
+
+function setMapLayer(layerKey) {
+  const map = state.leafletMap;
+  if (!map) return;
+  const cfg = MAP_LAYERS[layerKey] || MAP_LAYERS.streets;
+  if (_currentTileLayer) map.removeLayer(_currentTileLayer);
+  _currentTileLayer = L.tileLayer(cfg.url, {
+    attribution: cfg.attr,
+    subdomains: 'abcd',
+    maxZoom: cfg.maxZoom,
+  }).addTo(map);
+  // Move tile layer to back so route polylines stay on top
+  _currentTileLayer.bringToBack();
+  state._currentLayerKey = layerKey;
+}
+
+/** Toggle CSS 3D perspective tilt on the map */
+function toggle3D() {
+  const mapEl  = document.getElementById('routeMap');
+  const btn    = document.getElementById('map3dBtn');
+  if (!mapEl) return;
+  const is3D = mapEl.classList.toggle('map-3d');
+  if (btn) btn.classList.toggle('active', is3D);
+  // Trigger Leaflet resize after transform settles
+  setTimeout(() => { if (state.leafletMap) state.leafletMap.invalidateSize(); }, 350);
+}
+
 /** Destroi instância anterior do mapa (necessário para re-renderizar) */
 function destroyMap() {
   if (state.leafletMap) {
@@ -744,11 +797,14 @@ function buildMap() {
     preferCanvas: true,
   });
 
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/">CARTO</a>',
-    subdomains: 'abcd',
-    maxZoom: 19,
-  }).addTo(map);
+  state.leafletMap = map; // set early so setMapLayer can use it
+  _currentTileLayer = null;
+  setMapLayer(state._currentLayerKey || 'streets');
+
+  // Sync layer button UI
+  document.querySelectorAll('.map-layer-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.layer === (state._currentLayerKey || 'streets'))
+  );
 
   const allBounds = [];
 
@@ -824,188 +880,141 @@ function buildMap() {
   }
 
   setTimeout(() => map.invalidateSize(), 100);
-  state.leafletMap = map;
 
   // Pass scrubData to the timeline controller
   initTimeline(scrubData);
 }
 
-// ── TIMELINE CONTROLLER (singleton — lives outside buildMap) ──────────────
-// State lives on the `state` object so re-builds don't stack listeners.
-(function initTimelineController() {
-  // These listeners are registered once, at app startup.
-  // They read from state.timeline which buildMap refreshes on each load.
+// ─────────────────────────────────────────────────────────────────────
+// TIMELINE — funções globais, listeners registrados UMA vez em initApp
+// ─────────────────────────────────────────────────────────────────────
 
-  function findPtIdx(pts, sec) {
-    if (!pts.length) return 0;
-    let lo = 0, hi = pts.length - 1;
-    while (lo < hi) {
-      const mid = (lo + hi + 1) >> 1;
-      if (pts[mid].elapsedSec <= sec) lo = mid;
-      else hi = mid - 1;
-    }
-    return lo;
+function tlFindIdx(pts, sec) {
+  if (!pts.length) return 0;
+  let lo = 0, hi = pts.length - 1;
+  while (lo < hi) {
+    const mid = (lo + hi + 1) >> 1;
+    if (pts[mid].elapsedSec <= sec) lo = mid; else hi = mid - 1;
   }
+  return lo;
+}
 
-  function interpLatLon(pts, sec) {
-    if (!pts.length) return null;
-    const i0 = findPtIdx(pts, sec);
-    const p0 = pts[i0];
-    const p1 = pts[Math.min(i0 + 1, pts.length - 1)];
-    if (p0 === p1 || p1.elapsedSec === p0.elapsedSec) return [p0.lat, p0.lon];
-    const t = (sec - p0.elapsedSec) / (p1.elapsedSec - p0.elapsedSec);
-    return [p0.lat + t * (p1.lat - p0.lat), p0.lon + t * (p1.lon - p0.lon)];
-  }
+function tlInterp(pts, sec) {
+  if (!pts.length) return null;
+  const i0 = tlFindIdx(pts, sec);
+  const p0 = pts[i0], p1 = pts[Math.min(i0 + 1, pts.length - 1)];
+  if (p0 === p1 || p1.elapsedSec === p0.elapsedSec) return [p0.lat, p0.lon];
+  const t = (sec - p0.elapsedSec) / (p1.elapsedSec - p0.elapsedSec);
+  return [p0.lat + t * (p1.lat - p0.lat), p0.lon + t * (p1.lon - p0.lon)];
+}
 
-  function updateScrubber(value) {
-    const tl = state.timeline;
-    if (!tl) return;
-    const { scrubData, maxSec } = tl;
-    const pct = value / 1000;
-    const sec = pct * maxSec;
+function tlUpdate(value) {
+  const tl = state.timeline;
+  if (!tl) return;
+  const pct = Math.min(Math.max(value, 0), 1000) / 1000;
+  const sec = pct * tl.maxSec;
 
-    const scrubber  = document.getElementById('timelineScrubber');
-    const trackFill = document.getElementById('timelineTrackFill');
-    const labelEl   = document.getElementById('timelineLabel');
-    if (scrubber)  scrubber.value = value;
-    if (trackFill) trackFill.style.width = (pct * 100) + '%';
-    if (labelEl)   labelEl.textContent = secondsToHMS(sec);
+  const scrubEl   = document.getElementById('timelineScrubber');
+  const fillEl    = document.getElementById('timelineTrackFill');
+  const labelEl   = document.getElementById('timelineLabel');
+  if (scrubEl)  scrubEl.value = value;
+  if (fillEl)   fillEl.style.width = (pct * 100) + '%';
+  if (labelEl)  labelEl.textContent = secondsToHMS(sec);
 
-    scrubData.forEach(d => {
-      const { gpsPoints, marker, act } = d;
-      if (!gpsPoints.length) return;
-      const actSec = Math.min(sec, gpsPoints[gpsPoints.length - 1].elapsedSec);
-      const pos = interpLatLon(gpsPoints, actSec);
-      if (pos) marker.setLatLng(pos);
+  tl.scrubData.forEach(d => {
+    if (!d.gpsPoints.length) return;
+    const actSec = Math.min(sec, d.gpsPoints[d.gpsPoints.length - 1].elapsedSec);
+    const pos = tlInterp(d.gpsPoints, actSec);
+    if (pos) d.marker.setLatLng(pos);
 
-      const idx    = findPtIdx(gpsPoints, actSec);
-      const pt     = gpsPoints[idx];
-      const valsEl = document.getElementById(`scrub-vals-${act.id}`);
-      if (!valsEl || !pt) return;
-      const parts = [];
-      if (pt.distanceM != null)           parts.push(`<span style="color:${act.color};font-weight:600;">${(pt.distanceM/1000).toFixed(2)}<span style="opacity:.5;font-size:.65rem;"> km</span></span>`);
-      if (pt.heartRate)                   parts.push(`<span>♥ ${pt.heartRate}<span style="opacity:.5;font-size:.65rem;"> bpm</span></span>`);
-      if (pt.speed != null && pt.speed > 0.3) parts.push(`<span>⚡ ${pt.speed.toFixed(1)}<span style="opacity:.5;font-size:.65rem;"> km/h</span></span>`);
-      if (pt.altitude != null)            parts.push(`<span>⛰ ${Math.round(pt.altitude)}<span style="opacity:.5;font-size:.65rem;"> m</span></span>`);
-      valsEl.innerHTML = parts.join('') || '<span style="opacity:.4;">—</span>';
-    });
-  }
-
-  function setPlayUI(playing) {
-    state.timeline.isPlaying = playing;
-    const playIcon  = document.getElementById('playIcon');
-    const pauseIcon = document.getElementById('pauseIcon');
-    const playBtn   = document.getElementById('timelinePlayBtn');
-    if (playIcon)  playIcon.style.display  = playing ? 'none' : '';
-    if (pauseIcon) pauseIcon.style.display = playing ? ''     : 'none';
-    if (playBtn)   playBtn.classList.toggle('playing', playing);
-  }
-
-  function stopPlayback() {
-    const tl = state.timeline;
-    if (!tl) return;
-    if (tl.raf) { cancelAnimationFrame(tl.raf); tl.raf = null; }
-    tl.lastTS = null;
-    setPlayUI(false);
-  }
-
-  function animationTick(ts) {
-    const tl = state.timeline;
-    if (!tl || !tl.isPlaying) return;
-    if (tl.lastTS === null) tl.lastTS = ts;
-
-    const wallDelta = (ts - tl.lastTS) / 1000;
-    tl.lastTS = ts;
-
-    const scrubber = document.getElementById('timelineScrubber');
-    if (!scrubber) { stopPlayback(); return; }
-
-    const simDelta = wallDelta * tl.speed;
-    const stepVal  = (simDelta / tl.maxSec) * 1000;
-    const newVal   = Math.min(+scrubber.value + stepVal, 1000);
-
-    updateScrubber(newVal);
-
-    if (newVal >= 1000) { stopPlayback(); return; }
-    tl.raf = requestAnimationFrame(animationTick);
-  }
-
-  function togglePlay() {
-    const tl = state.timeline;
-    if (!tl) return;
-    if (tl.isPlaying) { stopPlayback(); return; }
-    const scrubber = document.getElementById('timelineScrubber');
-    if (scrubber && +scrubber.value >= 999) {
-      updateScrubber(0);
-    }
-    setPlayUI(true);
-    tl.lastTS = null;
-    tl.raf = requestAnimationFrame(animationTick);
-  }
-
-  // Single delegation listener on mapSection (permanent DOM element)
-  document.addEventListener('click', e => {
-    if (e.target.closest('#timelinePlayBtn')) { togglePlay(); return; }
-    if (e.target.closest('.speed-chip')) {
-      const chip = e.target.closest('.speed-chip');
-      document.querySelectorAll('.speed-chip').forEach(c => c.classList.remove('active'));
-      chip.classList.add('active');
-      if (state.timeline) state.timeline.speed = +chip.dataset.speed;
-    }
+    const pt = d.gpsPoints[tlFindIdx(d.gpsPoints, actSec)];
+    const el = document.getElementById('scrub-vals-' + d.act.id);
+    if (!el || !pt) return;
+    const p = [];
+    if (pt.distanceM != null)          p.push(`<span style="color:${d.act.color};font-weight:600">${(pt.distanceM/1000).toFixed(2)}<small style="opacity:.5"> km</small></span>`);
+    if (pt.heartRate)                  p.push(`<span>♥ ${pt.heartRate}<small style="opacity:.5"> bpm</small></span>`);
+    if (pt.speed > 0.3)                p.push(`<span>⚡ ${pt.speed.toFixed(1)}<small style="opacity:.5"> km/h</small></span>`);
+    if (pt.altitude != null)           p.push(`<span>⛰ ${Math.round(pt.altitude)}<small style="opacity:.5"> m</small></span>`);
+    el.innerHTML = p.join('') || '<span style="opacity:.4">—</span>';
   });
+}
 
-  document.addEventListener('input', e => {
-    if (e.target.id === 'timelineScrubber') {
-      stopPlayback();
-      updateScrubber(+e.target.value);
-    }
-  });
+function tlSetUI(playing) {
+  const tl = state.timeline;
+  if (tl) tl.isPlaying = playing;
+  const pi = document.getElementById('playIcon');
+  const pa = document.getElementById('pauseIcon');
+  const pb = document.getElementById('timelinePlayBtn');
+  if (pi) pi.style.display  = playing ? 'none' : '';
+  if (pa) pa.style.display  = playing ? ''     : 'none';
+  if (pb) pb.classList.toggle('playing', playing);
+}
 
-  // Expose updateScrubber so initTimeline can call it
-  state._updateScrubber = updateScrubber;
-  state._stopPlayback   = stopPlayback;
-})();
+function tlStop() {
+  const tl = state.timeline;
+  if (!tl) return;
+  if (tl.raf) { cancelAnimationFrame(tl.raf); tl.raf = null; }
+  tl.lastTS = null;
+  tlSetUI(false);
+}
 
-/** Called by buildMap to refresh timeline state after new activities load */
+function tlTick(ts) {
+  const tl = state.timeline;
+  if (!tl || !tl.isPlaying) return;
+  if (tl.lastTS === null) { tl.lastTS = ts; tl.raf = requestAnimationFrame(tlTick); return; }
+
+  const wall = (ts - tl.lastTS) / 1000;
+  tl.lastTS = ts;
+
+  const scrubEl = document.getElementById('timelineScrubber');
+  if (!scrubEl) { tlStop(); return; }
+
+  const step   = (wall * tl.speed / tl.maxSec) * 1000;
+  const newVal = Math.min(+scrubEl.value + step, 1000);
+  tlUpdate(newVal);
+
+  if (newVal >= 1000) { tlStop(); return; }
+  tl.raf = requestAnimationFrame(tlTick);
+}
+
+function tlTogglePlay() {
+  const tl = state.timeline;
+  if (!tl) return;
+  if (tl.isPlaying) { tlStop(); return; }
+  const scrubEl = document.getElementById('timelineScrubber');
+  if (scrubEl && +scrubEl.value >= 999) tlUpdate(0);
+  tlSetUI(true);
+  tl.lastTS = null;
+  tl.raf = requestAnimationFrame(tlTick);
+}
+
+/** Called by buildMap each time new activities are loaded */
 function initTimeline(scrubData) {
-  // Stop any ongoing playback from previous session
-  if (state._stopPlayback) state._stopPlayback();
-
-  const scrubber  = document.getElementById('timelineScrubber');
-  const labelEnd  = document.getElementById('timelineLabelEnd');
-  const statsEl   = document.getElementById('timelineStats');
-  if (!scrubber || !scrubData.length) return;
+  tlStop();
 
   const maxSec = Math.max(...scrubData.map(d =>
     d.gpsPoints.length ? d.gpsPoints[d.gpsPoints.length - 1].elapsedSec : 0
   ));
   if (maxSec <= 0) return;
 
-  // Reset slider
-  scrubber.value = 0;
-  const trackFill = document.getElementById('timelineTrackFill');
-  if (trackFill) trackFill.style.width = '0%';
-
-  if (labelEnd) labelEnd.textContent = secondsToHMS(maxSec);
-
-  // Reset speed chips to 1×
-  document.querySelectorAll('.speed-chip').forEach(c => {
-    c.classList.toggle('active', c.dataset.speed === '1');
-  });
-
-  // Build stats chips
-  if (statsEl) statsEl.innerHTML = scrubData.map(d => `
-    <div class="timeline-stat-chip" id="scrub-chip-${d.act.id}">
-      <div class="timeline-stat-dot" style="background:${d.act.color};"></div>
-      <span style="font-family:var(--font-m);font-size:.72rem;color:var(--muted);max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${d.act.filename.replace(/\.(tcx|gpx)$/i,'')}</span>
-      <div class="timeline-stat-vals" id="scrub-vals-${d.act.id}" style="display:flex;gap:.5rem;flex-wrap:wrap;"><span style="opacity:.4;">—</span></div>
-    </div>`).join('');
-
-  // Store fresh timeline state
   state.timeline = { scrubData, maxSec, isPlaying: false, speed: 1, raf: null, lastTS: null };
 
-  // Render at position 0
-  if (state._updateScrubber) state._updateScrubber(0);
+  const labelEnd = document.getElementById('timelineLabelEnd');
+  const statsEl  = document.getElementById('timelineStats');
+  if (labelEnd) labelEnd.textContent = secondsToHMS(maxSec);
+
+  document.querySelectorAll('.speed-chip').forEach(c =>
+    c.classList.toggle('active', c.dataset.speed === '1')
+  );
+
+  if (statsEl) statsEl.innerHTML = scrubData.map(d => `
+    <div class="timeline-stat-chip">
+      <div class="timeline-stat-dot" style="background:${d.act.color}"></div>
+      <span style="font-family:var(--font-m);font-size:.72rem;color:var(--muted);max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.act.filename.replace(/\.(tcx|gpx)$/i,'')}</span>
+      <div id="scrub-vals-${d.act.id}" style="display:flex;gap:.5rem;flex-wrap:wrap"><span style="opacity:.4">—</span></div>
+    </div>`).join('');
+
+  tlUpdate(0);
 }
 
 /** Cartões de resumo com ícones, cores e valores por atividade */
@@ -1413,24 +1422,46 @@ if ('serviceWorker' in navigator) {
 function initApp() {
   initDropZone();
 
+  // ── Timeline listeners — registered ONCE here, never inside buildMap ──
+  document.getElementById('timelinePlayBtn').addEventListener('click', tlTogglePlay);
+
+  document.addEventListener('click', e => {
+    const chip = e.target.closest('.speed-chip');
+    if (!chip) return;
+    document.querySelectorAll('.speed-chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    if (state.timeline) state.timeline.speed = +chip.dataset.speed;
+  });
+
+  document.getElementById('timelineScrubber').addEventListener('input', e => {
+    tlStop();
+    tlUpdate(+e.target.value);
+  });
+
+  // Map layer switcher
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('.map-layer-btn');
+    if (!btn || !state.leafletMap) return;
+    const layer = btn.dataset.layer;
+    document.querySelectorAll('.map-layer-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    setMapLayer(layer);
+  });
+
   // Botão comparar
   document.getElementById('compareBtn').addEventListener('click', async () => {
     await runComparison();
-    // Save to history after comparison completes
     if (window.addToHistory && state.activities.length >= 1) {
       window.addToHistory(state.activities);
     }
   });
 
-  // Voltar
   document.getElementById('backBtn').addEventListener('click', showUpload);
 
-  // Limpar tudo
   document.getElementById('clearBtn').addEventListener('click', () => {
     if (confirm('Limpar todas as atividades carregadas?')) clearAll();
   });
 
-  // Restaura dados do LocalStorage se existirem
   const saved = loadFromLS();
   if (saved && saved.length >= 1) {
     state.activities = saved.map((a, i) => ({
@@ -1443,6 +1474,7 @@ function initApp() {
   }
 }
 window.initApp = initApp;
+window.toggle3D = toggle3D;
 
 // Expose state globally for history integration
 window.state = state;

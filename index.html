@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TrackLab — Comparador de Atividades</title>
+  <title>Endurance — Comparador de Atividades</title>
   <meta name="theme-color" content="#0d0d0d" />
   <meta name="description" content="Compare suas atividades TCX e GPX com gráficos interativos." />
   <link rel="manifest" href="manifest.json" />
@@ -160,9 +160,11 @@
     .axis-btn.active{background:var(--brand-bg);border-color:rgba(0,71,255,0.3);color:var(--brand);}
 
     /* MAP */
-    #mapSection{background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--rl);overflow:hidden;margin-bottom:1rem;box-shadow:var(--shadow);}
+    #mapSection{background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--rl);overflow:visible;margin-bottom:1rem;box-shadow:var(--shadow);}
     #mapSection .map-header{padding:.82rem 1.2rem;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border2);}
-    #routeMap{height:400px;width:100%;background:#e8edf5;}
+    #routeMap{height:400px;width:100%;background:#e8edf5;transition:transform .35s ease,border-radius .35s ease;}
+    #mapSection{perspective:1200px;perspective-origin:50% 100%;}
+    #routeMap.map-3d{transform:rotateX(28deg) scale(1.08);transform-origin:50% 100%;border-radius:8px 8px 0 0;}
     /* Scrubber thumb */
     #timelineScrubber::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--brand);border:3px solid #fff;box-shadow:0 1px 8px rgba(0,71,255,0.4);cursor:pointer;position:relative;z-index:1;}
     #timelineScrubber::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--brand);border:3px solid #fff;box-shadow:0 1px 8px rgba(0,71,255,0.4);cursor:pointer;}
@@ -176,6 +178,10 @@
     .speed-chip.active{background:var(--brand-bg);border-color:rgba(0,71,255,.35);color:var(--brand);}
     #timelinePlayBtn:hover{transform:scale(1.08);}
     #timelinePlayBtn.playing{background:var(--text);}
+    /* Map layer buttons */
+    .map-layer-btn{font-family:var(--font-m);font-size:.72rem;font-weight:600;padding:.22rem .55rem;border-radius:5px;border:1.5px solid var(--border);background:var(--bg3);color:var(--muted);cursor:pointer;transition:all .15s;}
+    .map-layer-btn.active{background:var(--brand-bg);border-color:rgba(0,71,255,.35);color:var(--brand);}
+    #map3dBtn.active{background:rgba(234,88,12,.1);border-color:rgba(234,88,12,.4);color:#ea580c;}
     .leaflet-container{background:#dce5f0!important;font-family:var(--font-m)!important;}
     .leaflet-control-zoom a{background:var(--bg2)!important;border-color:var(--border)!important;color:var(--text2)!important;}
     .leaflet-control-zoom a:hover{background:var(--bg3)!important;color:var(--text)!important;}
@@ -250,7 +256,7 @@
           <circle cx="19" cy="7" r="2" fill="rgba(255,255,255,0.5)" opacity=".5"/>
         </svg>
       </div>
-      <div style="font-family:var(--font-d);font-weight:800;font-size:2.6rem;letter-spacing:.07em;text-transform:uppercase;line-height:1;">TrackLab</div>
+      <div style="font-family:var(--font-d);font-weight:800;font-size:2.6rem;letter-spacing:.07em;text-transform:uppercase;line-height:1;">Endurance</div>
       <div style="font-family:var(--font-m);font-size:1.8rem;color:var(--muted);margin-top:.28rem;letter-spacing:.07em;">PERFORMANCE ANALYTICS</div>
     </div>
     <div class="login-card">
@@ -259,7 +265,7 @@
         <div style="font-family:var(--font-m);font-size:.93rem;color:var(--muted);margin-bottom:1.4rem;">Entre na sua conta para continuar</div>
         <div id="loginError" class="login-error" style="margin-bottom:.85rem;"></div>
         <div style="display:flex;flex-direction:column;gap:.72rem;">
-          <div><label class="login-label" for="loginEmail">Email</label><input id="loginEmail" type="email" class="login-input" placeholder="atleta@tracklab.io"/></div>
+          <div><label class="login-label" for="loginEmail">Email</label><input id="loginEmail" type="email" class="login-input" placeholder="atleta@endurance.app"/></div>
           <div><label class="login-label" for="loginPass">Senha</label><input id="loginPass" type="password" class="login-input" placeholder="••••••••"/></div>
         </div>
         <button class="login-btn" style="margin-top:1.3rem;" onclick="doLogin()">Entrar</button>
@@ -272,7 +278,7 @@
         <div id="registerError" class="login-error" style="margin-bottom:.85rem;"></div>
         <div style="display:flex;flex-direction:column;gap:.72rem;">
           <div><label class="login-label">Nome</label><input id="regName" type="text" class="login-input" placeholder="Seu nome"/></div>
-          <div><label class="login-label">Email</label><input id="regEmail" type="email" class="login-input" placeholder="atleta@tracklab.io"/></div>
+          <div><label class="login-label">Email</label><input id="regEmail" type="email" class="login-input" placeholder="atleta@endurance.app"/></div>
           <div><label class="login-label">Senha</label><input id="regPass" type="password" class="login-input" placeholder="Mínimo 6 caracteres"/></div>
         </div>
         <button class="login-btn" style="margin-top:1.3rem;" onclick="doRegister()">Criar conta</button>
@@ -295,7 +301,7 @@
           </svg>
         </div>
         <div>
-          <div class="brand-name">TrackLab</div>
+          <div class="brand-name">Endurance</div>
           <div class="brand-sub">PERFORMANCE ANALYTICS</div>
         </div>
       </div>
@@ -432,7 +438,14 @@
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
             Trajetos no Mapa
           </div>
-          <span style="font-family:var(--font-m);font-size:.75rem;color:var(--muted);">● início &nbsp; ◆ fim</span>
+          <div style="display:flex;align-items:center;gap:.4rem;">
+            <button class="map-layer-btn active" data-layer="streets">Mapa</button>
+            <button class="map-layer-btn" data-layer="satellite">Satélite</button>
+            <button class="map-layer-btn" data-layer="terrain">Relevo</button>
+            <div style="width:1px;height:16px;background:var(--border);margin:0 .2rem;"></div>
+            <button id="map3dBtn" class="map-layer-btn" title="Inclinar vista 3D" onclick="toggle3D()">3D</button>
+            <span style="font-family:var(--font-m);font-size:.72rem;color:var(--muted);margin-left:.3rem;">● início &nbsp; ◆ fim</span>
+          </div>
         </div>
         <div id="routeMap"></div>
         <!-- TIMELINE SCRUBBER -->
@@ -579,7 +592,7 @@
 <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
 
 <script>
-const AUTH_KEY='tracklab_user',USERS_KEY='tracklab_users',HIST_KEY='tracklab_history';
+const AUTH_KEY='endurance_user',USERS_KEY='endurance_users',HIST_KEY='endurance_history';
 let currentUser=null,historyFilter='all';
 function getUsers(){try{return JSON.parse(localStorage.getItem(USERS_KEY)||'[]');}catch{return[];}}
 function saveUsers(u){localStorage.setItem(USERS_KEY,JSON.stringify(u));}
@@ -709,8 +722,8 @@ let _sharingSessionId=null;
 function openShareModal(sessionId){const s=getHistory().find(s=>s.id===sessionId);if(!s)return;_sharingSessionId=sessionId;document.getElementById('shareActivityPreview').innerHTML=s.activities.map(a=>`<span style="display:inline-flex;align-items:center;gap:.28rem;background:var(--bg4);border:1px solid var(--border);border-radius:4px;padding:.16rem .5rem;font-family:var(--font-m);font-size:.75rem;color:var(--muted);"><span style="width:6px;height:6px;border-radius:50%;background:${a.color};flex-shrink:0;"></span>${a.filename}<span style="opacity:.4;">·</span><span style="color:${a.color};">${a.summary.totalDistM>=1000?(a.summary.totalDistM/1000).toFixed(1)+'km':Math.round(a.summary.totalDistM)+'m'}</span></span>`).join('');const enc=encodeChallenge(s);if(!enc){toast('Erro ao gerar link','error');return;}document.getElementById('shareLink').value=buildShareUrl(enc);const btn=document.getElementById('copyBtn');btn.textContent='Copiar';btn.classList.remove('copied');document.getElementById('challengeModal').style.display='flex';}
 function closeShareModal(){const m=document.getElementById('challengeModal');m.classList.add('hiding');setTimeout(()=>{m.style.display='none';m.classList.remove('hiding');},200);}
 function copyShareLink(){navigator.clipboard.writeText(document.getElementById('shareLink').value).then(()=>{const b=document.getElementById('copyBtn');b.textContent='✓ Copiado!';b.classList.add('copied');setTimeout(()=>{b.textContent='Copiar';b.classList.remove('copied');},2500);}).catch(()=>{document.getElementById('shareLink').select();document.execCommand('copy');toast('Link copiado!','ok');});}
-function shareViaWhatsApp(){const link=document.getElementById('shareLink').value;const name=currentUser?.name.split(' ')[0]||'alguém';window.open(`https://wa.me/?text=${encodeURIComponent(`⚔️ *Desafio TrackLab!*\n${name} te desafia!\n${link}`)}`,'_blank');}
-function shareViaNative(){const link=document.getElementById('shareLink').value;if(navigator.share){navigator.share({title:'⚔️ Desafio TrackLab!',url:link}).catch(()=>{});}else{copyShareLink();toast('Link copiado!','ok');}}
+function shareViaWhatsApp(){const link=document.getElementById('shareLink').value;const name=currentUser?.name.split(' ')[0]||'alguém';window.open(`https://wa.me/?text=${encodeURIComponent(`⚔️ *Desafio Endurance!*\n${name} te desafia!\n${link}`)}`,'_blank');}
+function shareViaNative(){const link=document.getElementById('shareLink').value;if(navigator.share){navigator.share({title:'⚔️ Desafio Endurance!',url:link}).catch(()=>{});}else{copyShareLink();toast('Link copiado!','ok');}}
 function checkIncomingChallenge(){const hash=window.location.hash;if(!hash.startsWith('#challenge='))return;const payload=decodeChallenge(hash.slice('#challenge='.length));if(!payload)return;if(payload.expires&&Date.now()>payload.expires){toast('Link de desafio expirou.','warn');window.location.hash='';return;}window._incomingChallenge=payload;const banner=document.getElementById('challengeBanner'),nameEl=document.getElementById('challengerName');if(banner&&nameEl){nameEl.textContent=payload.from?`de ${payload.from}`:'';banner.classList.add('visible');}if(typeof switchTab==='function')switchTab('history');}
 function acceptChallenge(){if(!window._incomingChallenge)return;const payload=window._incomingChallenge;if(window.state){const COLS=['#e03a1e','#3d8ef0','#d4a017','#3da870','#a78bfa'];window.state.activities=payload.activities.map((a,i)=>({...a,id:Math.random().toString(36).slice(2,9),points:[],color:COLS[i%COLS.length],index:i,_fromChallenge:true}));}history.replaceState(null,'',window.location.pathname+window.location.search);document.getElementById('challengeBanner').classList.remove('visible');switchTab('upload');toast(`Treino de ${payload.from} carregado! Faça upload do seu.`,'ok');const fileList=document.getElementById('fileList'),compareBtn=document.getElementById('compareBtn');if(fileList&&compareBtn){fileList.classList.remove('hidden');fileList.style.display='grid';fileList.innerHTML=payload.activities.map((a,i)=>{const c=['#e03a1e','#3d8ef0','#d4a017','#3da870'][i%4];return`<div class="file-card" style="border-color:rgba(61,142,240,.25);"><div class="file-dot" style="background:${c}"></div><div class="file-card-info"><div class="name">${a.filename}</div><div class="size" style="color:var(--blue);">⚔️ Desafio de ${payload.from}</div></div></div>`;}).join('');compareBtn.classList.remove('hidden');compareBtn.textContent='Carregar meu treino e comparar →';}window._incomingChallenge=null;}
 document.addEventListener('DOMContentLoaded',()=>{const saved=localStorage.getItem(AUTH_KEY);if(saved){try{currentUser=JSON.parse(saved);enterApp();setTimeout(checkIncomingChallenge,300);}catch{}}document.getElementById('loginPass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});document.getElementById('loginEmail').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('loginPass').focus();});});
