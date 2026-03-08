@@ -1284,3 +1284,5 @@ window.initApp = initApp;
 
 // Expose state globally for history integration
 window.state = state;
+window.renderDashboard = renderDashboard;
+window.ACTIVITY_COLORS = ACTIVITY_COLORS;

@@ -563,7 +563,7 @@ function fmtDate(iso){const d=new Date(iso);return d.toLocaleDateString('pt-BR',
 function fmtTime(iso){const d=new Date(iso);return d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});}
 function relativeDate(iso){const diff=(Date.now()-new Date(iso))/1000;if(diff<60)return'agora';if(diff<3600)return`${Math.floor(diff/60)}min atrás`;if(diff<86400)return`${Math.floor(diff/3600)}h atrás`;if(diff<604800)return`${Math.floor(diff/86400)}d atrás`;return fmtDate(iso);}
 function sToHMS(s){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=Math.floor(s%60);if(h>0)return`${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;return`${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;}
-function addToHistory(activities){if(!currentUser||!activities.length)return;const hist=getHistory();hist.unshift({id:Date.now().toString(36),date:new Date().toISOString(),activities:activities.map(a=>({id:a.id,filename:a.filename,label:a.label,sport:detectSport(a.label+' '+a.filename),startTime:a.startTime,summary:a.summary,color:a.color}))});saveHistory(hist);}
+function addToHistory(activities){if(!currentUser||!activities.length)return;const hist=getHistory();hist.unshift({id:Date.now().toString(36),date:new Date().toISOString(),activities:activities.map(a=>({id:a.id,filename:a.filename,label:a.label,sport:detectSport(a.label+' '+a.filename),startTime:a.startTime,summary:a.summary,color:a.color,coords:a.coords||[],points:a.points||[]}))});saveHistory(hist);}
 function setFilter(btn,filter){historyFilter=filter;document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));btn.classList.add('active');renderHistory();}
 function renderHistory(){
   const hist=getHistory(),search=(document.getElementById('historySearch')?.value||'').toLowerCase(),now=Date.now(),sevenD=7*24*3600*1000;
@@ -616,7 +616,50 @@ function renderHistory(){
 }
 function deleteSession(id){if(!confirm('Remover esta sessão?'))return;saveHistory(getHistory().filter(s=>s.id!==id));renderHistory();}
 function clearHistory(){if(!getHistory().length)return;if(!confirm('Limpar todo o histórico?'))return;saveHistory([]);renderHistory();}
-function loadHistorySession(id){const s=getHistory().find(s=>s.id===id);if(!s)return;toast(`${s.activities.length} atividade(s) · ${fmtDate(s.date)}`,'ok');switchTab('upload');}
+function loadHistorySession(id){
+  const s=getHistory().find(s=>s.id===id);
+  if(!s)return;
+
+  // Check if points data is available (may be missing in old saved sessions)
+  const hasPoints = s.activities.some(a => a.points && a.points.length > 0);
+  if(!hasPoints){
+    toast('Sessão antiga sem dados completos. Recarregue o arquivo .tcx/.gpx para comparar.','warn');
+    return;
+  }
+
+  // Restore full activity objects into state
+  if(window.state){
+    window.state.activities = s.activities.map((a,i)=>({
+      id:        a.id || Math.random().toString(36).slice(2,9),
+      filename:  a.filename,
+      label:     a.label,
+      startTime: a.startTime,
+      summary:   a.summary,
+      coords:    a.coords   || [],
+      points:    a.points   || [],
+      color:     a.color    || ACTIVITY_COLORS[i % ACTIVITY_COLORS.length],
+      index:     i,
+    }));
+  }
+
+  // Switch to upload tab and show dashboard
+  switchTab('upload');
+
+  // Hide upload section, show dashboard
+  const uploadSection = document.getElementById('uploadSection');
+  const dashboard     = document.getElementById('dashboard');
+  const clearBtn      = document.getElementById('clearBtn');
+  const clearBtnMob   = document.getElementById('clearBtnMob');
+  if(uploadSection) uploadSection.classList.add('hidden');
+  if(dashboard)     dashboard.classList.remove('hidden');
+  if(clearBtn)      clearBtn.classList.remove('hidden');
+  if(clearBtnMob)   clearBtnMob.classList.remove('hidden');
+
+  // Trigger full dashboard render via app.js
+  if(window.renderDashboard) window.renderDashboard();
+
+  toast(`${s.activities.length} atividade(s) carregada(s)`, 'ok');
+}
 function encodeChallenge(s){try{return btoa(unescape(encodeURIComponent(JSON.stringify({v:1,from:currentUser?.name||'Atleta',created:Date.now(),expires:Date.now()+7*24*3600*1000,activities:s.activities.map(a=>({filename:a.filename,label:a.label,color:a.color,summary:a.summary,coords:a.coords?a.coords.filter((_,i)=>i%5===0):[]}))}))));}catch{return null;}}
 function decodeChallenge(enc){try{return JSON.parse(decodeURIComponent(escape(atob(enc))));}catch{return null;}}
 function buildShareUrl(enc){return`${window.location.href.split('#')[0]}#challenge=${enc}`;}
