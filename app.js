@@ -714,7 +714,7 @@ function destroyMap() {
 
 /**
  * Constrói o mapa Leaflet com as rotas das atividades sobrepostas.
- * Usa lat/lon armazenados em activity.coords (array de [lat, lon]).
+ * Inclui timeline scrubber que move marcadores ao longo do trajeto.
  */
 function buildMap() {
   destroyMap();
@@ -722,7 +722,6 @@ function buildMap() {
   const mapEl = document.getElementById('routeMap');
   if (!mapEl) return;
 
-  // Verifica se alguma atividade tem coordenadas GPS
   const hasCoords = state.activities.some(a => a.coords && a.coords.length > 1);
   const mapSection = document.getElementById('mapSection');
 
@@ -732,14 +731,12 @@ function buildMap() {
   }
   if (mapSection) mapSection.classList.remove('hidden');
 
-  // Aguarda o Leaflet estar disponível
   if (typeof L === 'undefined') {
     console.warn('Leaflet não carregado ainda');
     return;
   }
 
-  // Reset do tamanho do container (importante após hidden)
-  mapEl.style.height = '420px';
+  mapEl.style.height = '340px';
 
   const map = L.map(mapEl, {
     zoomControl: true,
@@ -747,7 +744,6 @@ function buildMap() {
     preferCanvas: true,
   });
 
-  // Tile layer claro — CartoDB Positron
   L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
     attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/">CARTO</a>',
     subdomains: 'abcd',
@@ -756,69 +752,56 @@ function buildMap() {
 
   const allBounds = [];
 
+  // Per-activity data for scrubber
+  const scrubData = []; // { act, coords, points, marker }
+
   state.activities.forEach(act => {
     if (!act.coords || act.coords.length < 2) return;
 
-    const color = act.color;
-    const latlngs = act.coords; // [[lat, lon], ...]
+    const color   = act.color;
+    const latlngs = act.coords;
 
-    // Polyline da rota
-    const line = L.polyline(latlngs, {
-      color,
-      weight: 3.5,
-      opacity: 0.85,
-      lineJoin: 'round',
-      lineCap: 'round',
-    }).addTo(map);
-
-    // Glow effect — segunda linha mais grossa e mais transparente
-    L.polyline(latlngs, {
-      color,
-      weight: 8,
-      opacity: 0.15,
-      lineJoin: 'round',
-      lineCap: 'round',
-    }).addTo(map);
+    // Route polyline + glow
+    L.polyline(latlngs, { color, weight: 8,   opacity: 0.12, lineJoin: 'round', lineCap: 'round' }).addTo(map);
+    L.polyline(latlngs, { color, weight: 3.5, opacity: 0.85, lineJoin: 'round', lineCap: 'round' }).addTo(map);
 
     allBounds.push(...latlngs);
 
-    // Marcador de início
-    const startIcon = L.divIcon({
+    // Start marker
+    L.marker(latlngs[0], {
+      icon: L.divIcon({
+        className: '',
+        html: `<div style="width:13px;height:13px;border-radius:50%;background:${color};border:3px solid #fff;box-shadow:0 0 8px ${color};"></div>`,
+        iconSize: [13, 13], iconAnchor: [6, 6],
+      })
+    }).bindTooltip(`▶ Início — ${act.filename}`, { direction: 'top', className: 'map-tooltip' }).addTo(map);
+
+    // End marker
+    L.marker(latlngs[latlngs.length - 1], {
+      icon: L.divIcon({
+        className: '',
+        html: `<div style="width:11px;height:11px;border-radius:3px;background:${color};border:2px solid #fff;box-shadow:0 0 8px ${color};transform:rotate(45deg);"></div>`,
+        iconSize: [11, 11], iconAnchor: [5, 5],
+      })
+    }).bindTooltip(`■ Fim — ${act.filename}`, { direction: 'top', className: 'map-tooltip' }).addTo(map);
+
+    // Scrubber position marker — starts at beginning
+    const scrubIcon = L.divIcon({
       className: '',
-      html: `<div style="
-        width:14px;height:14px;border-radius:50%;
+      html: `<div id="scrub-dot-${act.id}" style="
+        width:16px;height:16px;border-radius:50%;
         background:${color};border:3px solid #fff;
-        box-shadow:0 0 8px ${color};
+        box-shadow:0 0 0 3px ${color}55,0 2px 8px rgba(0,0,0,0.25);
+        transition:none;
       "></div>`,
-      iconSize: [14, 14],
-      iconAnchor: [7, 7],
+      iconSize: [16, 16], iconAnchor: [8, 8],
     });
+    const scrubMarker = L.marker(latlngs[0], { icon: scrubIcon, zIndexOffset: 1000 }).addTo(map);
 
-    // Marcador de fim
-    const endIcon = L.divIcon({
-      className: '',
-      html: `<div style="
-        width:12px;height:12px;border-radius:3px;
-        background:${color};border:2px solid #fff;
-        box-shadow:0 0 8px ${color};transform:rotate(45deg);
-      "></div>`,
-      iconSize: [12, 12],
-      iconAnchor: [6, 6],
-    });
-
-    const startPt = latlngs[0];
-    const endPt   = latlngs[latlngs.length - 1];
-
-    L.marker(startPt, { icon: startIcon })
-      .bindTooltip(`▶ Início — ${act.filename}`, { direction: 'top', className: 'map-tooltip' })
-      .addTo(map);
-
-    L.marker(endPt, { icon: endIcon })
-      .bindTooltip(`■ Fim — ${act.filename}`, { direction: 'top', className: 'map-tooltip' })
-      .addTo(map);
+    scrubData.push({ act, latlngs, points: act.points || [], marker: scrubMarker });
   });
 
-  // Build legend
+  // Legend
   const legendEl = document.getElementById('mapLegend');
   if (legendEl) {
     legendEl.innerHTML = state.activities
@@ -827,23 +810,111 @@ function buildMap() {
         <div class="map-legend-item">
           <div class="map-legend-line" style="background:${a.color};box-shadow:0 0 6px ${a.color}88;"></div>
           <span style="color:${a.color};">${a.filename}</span>
-        </div>`)
-      .join('');
+        </div>`).join('');
   }
 
-  // Ajusta o zoom para englobar todas as rotas
+  // Fit bounds
   if (allBounds.length) {
-    try {
-      map.fitBounds(L.latLngBounds(allBounds), { padding: [32, 32] });
-    } catch (e) {
-      console.warn('fitBounds error:', e);
-    }
+    try { map.fitBounds(L.latLngBounds(allBounds), { padding: [32, 32] }); } catch(e) {}
   }
 
-  // Força resize após render (evita tiles em branco)
   setTimeout(() => map.invalidateSize(), 100);
-
   state.leafletMap = map;
+
+  // ── TIMELINE SCRUBBER ──────────────────────────────────
+  const scrubber   = document.getElementById('timelineScrubber');
+  const trackFill  = document.getElementById('timelineTrackFill');
+  const labelEl    = document.getElementById('timelineLabel');
+  const labelEnd   = document.getElementById('timelineLabelEnd');
+  const statsEl    = document.getElementById('timelineStats');
+  if (!scrubber || !scrubData.length) return;
+
+  // Use the longest activity's duration as the timeline reference
+  const maxSec = Math.max(...scrubData.map(d => {
+    const pts = d.points.filter(p => p.elapsedSec != null);
+    return pts.length ? pts[pts.length - 1].elapsedSec : 0;
+  }));
+
+  if (maxSec <= 0) return;
+
+  labelEnd.textContent = secondsToHMS(maxSec);
+
+  // Build stats chips HTML once for structure
+  statsEl.innerHTML = scrubData.map(d => `
+    <div class="timeline-stat-chip" id="scrub-chip-${d.act.id}">
+      <div class="timeline-stat-dot" style="background:${d.act.color};"></div>
+      <span style="font-family:var(--font-m);font-size:.66rem;color:var(--muted);max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${d.act.filename.replace(/\.(tcx|gpx)$/i,'')}</span>
+      <div class="timeline-stat-vals" id="scrub-vals-${d.act.id}">
+        <span>—</span>
+      </div>
+    </div>`).join('');
+
+  /** Given elapsedSec, find the nearest point index in a points array */
+  function nearestPointIdx(points, sec) {
+    if (!points.length) return 0;
+    let lo = 0, hi = points.length - 1;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (points[mid].elapsedSec < sec) lo = mid + 1;
+      else hi = mid;
+    }
+    return lo;
+  }
+
+  /** Given a 0-1 progress, find the interpolated latlng along coords */
+  function interpCoord(latlngs, pct) {
+    if (!latlngs.length) return null;
+    const rawIdx = pct * (latlngs.length - 1);
+    const i0 = Math.floor(rawIdx);
+    const i1 = Math.min(i0 + 1, latlngs.length - 1);
+    const t  = rawIdx - i0;
+    return [
+      latlngs[i0][0] + t * (latlngs[i1][0] - latlngs[i0][0]),
+      latlngs[i0][1] + t * (latlngs[i1][1] - latlngs[i0][1]),
+    ];
+  }
+
+  function updateScrubber(value) {
+    const pct = value / 1000; // 0..1
+    const sec = pct * maxSec;
+
+    // Update label
+    labelEl.textContent = '⏱ ' + secondsToHMS(sec);
+
+    // Update fill track
+    if (trackFill) trackFill.style.width = (pct * 100) + '%';
+
+    scrubData.forEach(d => {
+      // Move marker along coords proportional to its own duration
+      const actMaxSec = d.points.length
+        ? d.points[d.points.length - 1].elapsedSec || maxSec
+        : maxSec;
+      const actPct = Math.min(sec / actMaxSec, 1);
+      const pos = interpCoord(d.latlngs, actPct);
+      if (pos) d.marker.setLatLng(pos);
+
+      // Get nearest data point for stats
+      const ptsWithSec = d.points.filter(p => p.elapsedSec != null);
+      const idx = nearestPointIdx(ptsWithSec, sec);
+      const pt  = ptsWithSec[idx];
+
+      const valsEl = document.getElementById(`scrub-vals-${d.act.id}`);
+      if (!valsEl || !pt) return;
+
+      const parts = [];
+      if (pt.distanceM != null) parts.push(`<span style="color:${d.act.color};font-weight:600;">${(pt.distanceM/1000).toFixed(2)}<span style="opacity:.5;font-size:.62rem;">km</span></span>`);
+      if (pt.heartRate)         parts.push(`<span>♥ ${pt.heartRate}<span style="opacity:.5;font-size:.62rem;">bpm</span></span>`);
+      if (pt.speed != null && pt.speed > 0) parts.push(`<span>⚡ ${pt.speed.toFixed(1)}<span style="opacity:.5;font-size:.62rem;">km/h</span></span>`);
+      if (pt.altitude != null)  parts.push(`<span>⛰ ${Math.round(pt.altitude)}<span style="opacity:.5;font-size:.62rem;">m</span></span>`);
+
+      valsEl.innerHTML = parts.join('') || '<span style="opacity:.4;">—</span>';
+    });
+  }
+
+  // Init at 0
+  updateScrubber(0);
+
+  scrubber.addEventListener('input', e => updateScrubber(+e.target.value));
 }
 
 /** Cartões de resumo com ícones, cores e valores por atividade */
