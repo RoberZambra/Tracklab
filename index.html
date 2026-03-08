@@ -27,7 +27,7 @@
       --shadow:0 1px 3px rgba(0,0,0,0.07),0 4px 16px rgba(0,71,255,0.06);
     }
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-    body{background:var(--bg);color:var(--text);font-family:var(--font-b);font-size:14px;line-height:1.5;min-height:100vh;}
+    body{background:var(--bg);color:var(--text);font-family:var(--font-b);font-size:16px;line-height:1.5;min-height:100vh;}
     ::-webkit-scrollbar{width:4px;height:4px;}
     ::-webkit-scrollbar-track{background:transparent;}
     ::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:2px;}
@@ -41,42 +41,39 @@
     @keyframes brand-pulse{0%,100%{box-shadow:0 8px 24px rgba(0,71,255,0.3);}50%{box-shadow:0 8px 32px rgba(0,71,255,0.5);}}
     .login-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:2rem;position:relative;overflow:hidden;box-shadow:var(--shadow);}
     .login-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--brand),#60a5fa);}
-    .login-input{width:100%;background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--r);padding:.7rem .9rem;color:var(--text);font-family:var(--font-b);font-size:.875rem;outline:none;transition:border-color .15s,box-shadow .15s;}
+    .login-input{width:100%;background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--r);padding:.7rem .9rem;color:var(--text);font-family:var(--font-b);font-size:1.8rem;outline:none;transition:border-color .15s,box-shadow .15s;}
     .login-input:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(0,71,255,0.10);}
     .login-input::placeholder{color:var(--muted);}
-    .login-label{display:block;margin-bottom:.3rem;font-family:var(--font-m);font-size:.62rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
-    .login-btn{width:100%;background:var(--brand);color:#fff;font-family:var(--font-d);font-weight:700;font-size:.95rem;letter-spacing:.04em;text-transform:uppercase;padding:.75rem;border:none;border-radius:var(--r);cursor:pointer;transition:all .15s;box-shadow:0 4px 14px rgba(0,71,255,0.3);}
+    .login-label{display:block;margin-bottom:.3rem;font-family:var(--font-m);font-size:1.02rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+    .login-btn{width:100%;background:var(--brand);color:#fff;font-family:var(--font-d);font-weight:700;font-size:1.8rem;letter-spacing:.04em;text-transform:uppercase;padding:.75rem;border:none;border-radius:var(--r);cursor:pointer;transition:all .15s;box-shadow:0 4px 14px rgba(0,71,255,0.3);}
     .login-btn:hover{background:var(--brand2);transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,71,255,0.4);}
-    .login-error{background:rgba(220,38,38,.07);border:1px solid rgba(220,38,38,.2);border-radius:var(--r);padding:.42rem .75rem;color:#dc2626;font-family:var(--font-m);font-size:.72rem;display:none;}
+    .login-error{background:rgba(220,38,38,.07);border:1px solid rgba(220,38,38,.2);border-radius:var(--r);padding:.42rem .75rem;color:#dc2626;font-family:var(--font-m);font-size:1.8rem;display:none;}
     .login-error.visible{display:block;}
-    .login-divider{display:flex;align-items:center;gap:.6rem;color:var(--muted);font-family:var(--font-m);font-size:.65rem;}
+    .login-divider{display:flex;align-items:center;gap:.6rem;color:var(--muted);font-family:var(--font-m);font-size:1.35rem;}
     .login-divider::before,.login-divider::after{content:'';flex:1;height:1px;background:var(--border);}
-    .toggle-auth{background:none;border:none;color:var(--brand);cursor:pointer;font-family:var(--font-b);font-size:.8rem;text-decoration:underline;text-underline-offset:2px;font-weight:500;}
+    .toggle-auth{background:none;border:none;color:var(--brand);cursor:pointer;font-family:var(--font-b);font-size:.95rem;text-decoration:underline;text-underline-offset:2px;font-weight:500;}
 
-    /* HEADER */
     #appHeader{background:rgba(255,255,255,0.92);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:40;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);}
-    .header-inner{max-width:1280px;margin:0 auto;padding:.65rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:.5rem;overflow:hidden;}
-    .brand-mark{width:30px;height:30px;border-radius:8px;background:var(--brand);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 8px rgba(0,71,255,0.3);}
-    .brand-name{font-family:var(--font-d);font-weight:800;font-size:1.05rem;letter-spacing:.04em;text-transform:uppercase;color:var(--text);line-height:1;}
-    .brand-sub{font-family:var(--font-m);font-size:.55rem;color:var(--muted);line-height:1;margin-top:.12rem;}
-    .nav-tab{display:flex;align-items:center;gap:.32rem;padding:.35rem .78rem;border-radius:var(--r);font-family:var(--font-d);font-size:.82rem;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);background:none;border:1.5px solid transparent;cursor:pointer;transition:all .15s;white-space:nowrap;}
+    .header-inner{max-width:1280px;margin:0 auto;padding:.65rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:.5rem;}
+    .brand-mark{width:32px;height:32px;border-radius:8px;background:var(--brand);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 8px rgba(0,71,255,0.3);}
+    .brand-name{font-family:var(--font-d);font-weight:800;font-size:1.35rem;letter-spacing:.04em;text-transform:uppercase;color:var(--text);line-height:1;}
+    .brand-sub{font-family:var(--font-m);font-size:1.02rem;color:var(--muted);line-height:1;margin-top:.12rem;}
+    .nav-tab{display:flex;align-items:center;gap:.35rem;padding:.4rem .85rem;border-radius:var(--r);font-family:var(--font-d);font-size:1.05rem;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);background:none;border:1.5px solid transparent;cursor:pointer;transition:all .15s;white-space:nowrap;}
     .nav-tab:hover{color:var(--text);background:var(--bg3);}
     .nav-tab.active{color:var(--brand);background:var(--brand-bg);border-color:rgba(0,71,255,0.18);}
-    .user-chip{display:flex;align-items:center;gap:.42rem;padding:.3rem .62rem;background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--r);cursor:pointer;transition:border-color .15s,box-shadow .15s;flex-shrink:0;}
+    .user-chip{display:flex;align-items:center;gap:.42rem;padding:.35rem .7rem;background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--r);cursor:pointer;transition:border-color .15s,box-shadow .15s;flex-shrink:0;}
     .user-chip:hover{border-color:rgba(0,71,255,0.25);box-shadow:0 2px 8px rgba(0,71,255,0.08);}
-    .user-avatar{width:22px;height:22px;border-radius:4px;background:var(--brand);display:flex;align-items:center;justify-content:center;font-family:var(--font-d);font-weight:700;font-size:.68rem;color:#fff;flex-shrink:0;}
-    .user-name-display{font-family:var(--font-m);font-size:.68rem;color:var(--text2);}
-    .user-dropdown{position:absolute;top:calc(100% + .4rem);right:0;background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--rl);padding:.35rem;min-width:175px;box-shadow:0 16px 40px rgba(0,0,0,0.12),0 4px 12px rgba(0,71,255,0.08);z-index:60;display:none;animation:dropIn .12s ease;}
+    .user-avatar{width:24px;height:24px;border-radius:4px;background:var(--brand);display:flex;align-items:center;justify-content:center;font-family:var(--font-d);font-weight:700;font-size:1.03rem;color:#fff;flex-shrink:0;}
+    .user-name-display{font-family:var(--font-m);font-size:1.03rem;color:var(--text2);}
+    .user-dropdown{position:absolute;top:calc(100% + .4rem);right:0;background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--rl);padding:.35rem;min-width:185px;box-shadow:0 16px 40px rgba(0,0,0,0.12),0 4px 12px rgba(0,71,255,0.08);z-index:60;display:none;animation:dropIn .12s ease;}
     .user-dropdown.open{display:block;}
     @keyframes dropIn{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:none}}
-    .dropdown-item{display:flex;align-items:center;gap:.5rem;padding:.45rem .72rem;border-radius:var(--r);font-family:var(--font-b);font-size:.78rem;color:var(--text2);cursor:pointer;transition:all .1s;border:none;background:none;width:100%;text-align:left;}
+    .dropdown-item{display:flex;align-items:center;gap:.5rem;padding:.5rem .78rem;border-radius:var(--r);font-family:var(--font-b);font-size:1.8rem;color:var(--text2);cursor:pointer;transition:all .1s;border:none;background:none;width:100%;text-align:left;}
     .dropdown-item:hover{background:var(--bg3);color:var(--text);}
     .dropdown-item.danger{color:rgba(220,38,38,0.7);}
     .dropdown-item.danger:hover{background:rgba(220,38,38,0.06);color:#dc2626;}
     .dropdown-divider{height:1px;background:var(--border2);margin:.28rem 0;}
-    /* Mobile nav — hidden by default, shown only on mobile */
     .mobile-nav{display:none;}
-    /* Desktop: show desktop nav, hide mobile nav strip */
     .desktop-nav{display:flex;}
     @media(max-width:600px){
       .desktop-nav{display:none!important;}
@@ -90,28 +87,28 @@
     /* UPLOAD */
     .drop-zone{border:2px dashed var(--border);border-radius:var(--rl);cursor:pointer;transition:all .2s;text-align:center;padding:3.5rem 2rem;background:var(--bg2);}
     .drop-zone:hover,.drop-zone.drag-active{border-color:var(--brand);background:var(--brand-bg);box-shadow:0 0 0 4px rgba(0,71,255,0.06);}
-    .drop-zone-icon{width:60px;height:60px;border-radius:13px;background:var(--brand-bg);border:1.5px solid rgba(0,71,255,0.15);display:flex;align-items:center;justify-content:center;margin:0 auto 1.1rem;font-size:1.6rem;}
+    .drop-zone-icon{width:60px;height:60px;border-radius:13px;background:var(--brand-bg);border:1.5px solid rgba(0,71,255,0.15);display:flex;align-items:center;justify-content:center;margin:0 auto 1.1rem;font-size:1.8rem;}
     .file-card{display:flex;align-items:center;gap:.65rem;background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--r);padding:.65rem .85rem;box-shadow:var(--shadow);}
     .file-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
     .file-card-info{flex:1;min-width:0;}
-    .file-card-info .name{font-family:var(--font-m);font-size:.76rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-    .file-card-info .size{font-family:var(--font-m);font-size:.59rem;color:var(--muted);margin-top:.1rem;}
-    .file-remove{background:none;border:none;color:var(--muted);cursor:pointer;padding:.18rem .38rem;border-radius:3px;font-size:.7rem;transition:all .15s;}
+    .file-card-info .name{font-family:var(--font-m);font-size:1.04rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .file-card-info .size{font-family:var(--font-m);font-size:1.13rem;color:var(--muted);margin-top:.1rem;}
+    .file-remove{background:none;border:none;color:var(--muted);cursor:pointer;padding:.18rem .38rem;border-radius:3px;font-size:.85rem;transition:all .15s;}
     .file-remove:hover{color:#dc2626;background:rgba(220,38,38,0.07);}
-    .compare-btn{background:var(--brand);color:#fff;font-family:var(--font-d);font-weight:700;font-size:.95rem;letter-spacing:.04em;text-transform:uppercase;padding:.75rem 2.25rem;border:none;border-radius:var(--r);cursor:pointer;transition:all .2s;box-shadow:0 4px 14px rgba(0,71,255,0.3);}
+    .compare-btn{background:var(--brand);color:#fff;font-family:var(--font-d);font-weight:700;font-size:1.8rem;letter-spacing:.04em;text-transform:uppercase;padding:.75rem 2.25rem;border:none;border-radius:var(--r);cursor:pointer;transition:all .2s;box-shadow:0 4px 14px rgba(0,71,255,0.3);}
     .compare-btn:hover{background:var(--brand2);transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,71,255,0.4);}
 
     /* SUMMARY CARDS */
     .summary-card{background:var(--bg2);border:1.5px solid var(--border);border-top:3px solid var(--card-accent,var(--brand));border-radius:var(--rl);padding:.85rem .95rem;box-shadow:var(--shadow);}
     .summary-card-hd{display:flex;align-items:center;gap:.38rem;margin-bottom:.55rem;}
-    .summary-icon{font-size:.82rem;line-height:1;}
-    .summary-label{font-family:var(--font-d);font-size:.68rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);}
+    .summary-icon{font-size:1.12rem;line-height:1;}
+    .summary-label{font-family:var(--font-d);font-size:.93rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);}
     .summary-act-list{display:flex;flex-direction:column;gap:.33rem;}
     .summary-act-row{display:flex;align-items:center;gap:.38rem;}
     .summary-act-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
-    .summary-act-name{font-family:var(--font-m);font-size:.55rem;color:var(--muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-    .summary-act-val{font-family:var(--font-d);font-weight:700;font-size:.92rem;line-height:1;white-space:nowrap;}
-    .summary-act-val .unit{font-family:var(--font-m);font-size:.5rem;font-weight:400;opacity:.5;margin-left:.1em;}
+    .summary-act-name{font-family:var(--font-m);font-size:1.35rem;color:var(--muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .summary-act-val{font-family:var(--font-d);font-weight:700;font-size:1.08rem;line-height:1;white-space:nowrap;}
+    .summary-act-val .unit{font-family:var(--font-m);font-size:1.35rem;font-weight:400;opacity:.5;margin-left:.1em;}
 
     /* ZONE BARS */
     .zone-panel{background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--rl);overflow:hidden;box-shadow:var(--shadow);}
@@ -119,20 +116,20 @@
     .zone-hd-title{font-family:var(--font-d);font-size:1rem;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:var(--text);display:flex;align-items:center;gap:.5rem;line-height:1;}
     .zone-hd-title svg{width:16px;height:16px;flex-shrink:0;}
     .zone-hd-title .zone-icon{font-size:1rem;line-height:1;}
-    .zone-hd-sub{font-family:var(--font-b);font-size:.7rem;color:var(--muted);margin-top:.3rem;}
+    .zone-hd-sub{font-family:var(--font-b);font-size:.85rem;color:var(--muted);margin-top:.3rem;}
     .zone-tabs{display:flex;gap:.22rem;padding:.6rem 1.25rem .3rem;}
-    .zone-tab{padding:.22rem .65rem;border-radius:4px;font-family:var(--font-d);font-size:.7rem;font-weight:600;letter-spacing:.03em;text-transform:uppercase;background:none;border:1.5px solid transparent;color:var(--muted);cursor:pointer;transition:all .15s;}
+    .zone-tab{padding:.22rem .65rem;border-radius:4px;font-family:var(--font-d);font-size:.85rem;font-weight:600;letter-spacing:.03em;text-transform:uppercase;background:none;border:1.5px solid transparent;color:var(--muted);cursor:pointer;transition:all .15s;}
     .zone-tab.active{color:var(--text);background:var(--bg3);border-color:var(--border);}
     .zone-rows{padding:.5rem 1.25rem 1.1rem;display:flex;flex-direction:column;gap:.45rem;}
     .zone-row{display:grid;grid-template-columns:28px 1fr 80px;align-items:center;gap:.55rem;}
-    .zone-lbl{font-family:var(--font-d);font-size:.82rem;font-weight:800;color:var(--muted);letter-spacing:.03em;}
+    .zone-lbl{font-family:var(--font-d);font-size:1.12rem;font-weight:800;color:var(--muted);letter-spacing:.03em;}
     .zone-bar-wrap{position:relative;}
     .zone-bar-track{height:18px;background:rgba(0,0,0,0.05);border-radius:4px;overflow:hidden;}
     .zone-bar-fill{height:100%;border-radius:4px;transition:width 1s cubic-bezier(.34,1.1,.64,1);width:0;position:relative;}
-    .zone-bar-fill::after{content:attr(data-pct);position:absolute;right:7px;top:50%;transform:translateY(-50%);font-family:'IBM Plex Mono',monospace;font-weight:500;font-size:.75rem;color:rgba(255,255,255,0.9);white-space:nowrap;pointer-events:none;}
+    .zone-bar-fill::after{content:attr(data-pct);position:absolute;right:7px;top:50%;transform:translateY(-50%);font-family:'IBM Plex Mono',monospace;font-weight:500;font-size:1.03rem;color:rgba(255,255,255,0.9);white-space:nowrap;pointer-events:none;}
     .zone-bar-fill.pct-outside::after{right:auto;left:calc(100% + 5px);color:var(--text2);}
-    .zone-range{font-family:var(--font-m);font-size:.56rem;color:var(--muted);text-align:right;white-space:nowrap;line-height:1.3;}
-    .zone-empty{padding:1.4rem 1.2rem;font-family:var(--font-m);font-size:.7rem;color:var(--muted);text-align:center;}
+    .zone-range{font-family:var(--font-m);font-size:1.08rem;color:var(--muted);text-align:right;white-space:nowrap;line-height:1.3;}
+    .zone-empty{padding:1.4rem 1.2rem;font-family:var(--font-m);font-size:.85rem;color:var(--muted);text-align:center;}
 
     /* Zone responsive & accent borders */
     @media(max-width:640px){#zoneRow{grid-template-columns:1fr!important;}}
@@ -143,26 +140,26 @@
     .panel{background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--rl);overflow:hidden;box-shadow:var(--shadow);}
     .glass-panel{background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--rl);}
     .panel-hd{padding:.82rem 1.2rem;border-bottom:1px solid var(--border2);display:flex;align-items:center;justify-content:space-between;gap:.6rem;}
-    .panel-hd-title{font-family:var(--font-d);font-size:.87rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text);display:flex;align-items:center;gap:.45rem;}
+    .panel-hd-title{font-family:var(--font-d);font-size:1.02rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text);display:flex;align-items:center;gap:.45rem;}
     .panel-hd-title svg{width:16px;height:16px;flex-shrink:0;}
 
     /* TABLE */
     .comp-th-chip{display:inline-flex;align-items:center;gap:.3rem;background:var(--bg3);border:1.5px solid var(--border);border-radius:4px;padding:.2rem .58rem;white-space:nowrap;}
     .comp-th-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
-    .comp-th-name{font-family:var(--font-m);font-size:.62rem;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-    .metric-label{font-family:var(--font-b);font-size:.76rem;color:var(--text2);padding:.58rem 1.2rem .58rem 0;vertical-align:middle;white-space:nowrap;}
-    .metric-icon{margin-right:.38rem;font-size:.75rem;}
-    .best-val{display:inline-flex;align-items:center;gap:.22rem;font-family:var(--font-d);font-weight:700;font-size:.83rem;padding:.13rem .46rem;border-radius:3px;border:1.5px solid;}
-    .best-crown{font-size:.54rem;opacity:.7;}
-    .normal-val{font-family:var(--font-m);font-size:.73rem;color:var(--muted);}
+    .comp-th-name{font-family:var(--font-m);font-size:1.02rem;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .metric-label{font-family:var(--font-b);font-size:1.04rem;color:var(--text2);padding:.58rem 1.2rem .58rem 0;vertical-align:middle;white-space:nowrap;}
+    .metric-icon{margin-right:.38rem;font-size:1.03rem;}
+    .best-val{display:inline-flex;align-items:center;gap:.22rem;font-family:var(--font-d);font-weight:700;font-size:1.13rem;padding:.13rem .46rem;border-radius:3px;border:1.5px solid;}
+    .best-crown{font-size:.66rem;opacity:.7;}
+    .normal-val{font-family:var(--font-m);font-size:1.01rem;color:var(--muted);}
     #compTable tbody tr{border-bottom:1px solid var(--border2);transition:background .1s;}
     #compTable tbody tr:hover{background:var(--bg3);}
     #compTable tbody tr:last-child{border-bottom:none;}
 
     /* CHART */
-    .metric-btn{font-family:var(--font-d);font-size:.75rem;font-weight:600;letter-spacing:.03em;text-transform:uppercase;padding:.28rem .72rem;border-radius:4px;background:var(--bg3);border:1.5px solid var(--border);color:var(--muted);cursor:pointer;transition:all .15s;}
+    .metric-btn{font-family:var(--font-d);font-size:1.03rem;font-weight:600;letter-spacing:.03em;text-transform:uppercase;padding:.28rem .72rem;border-radius:4px;background:var(--bg3);border:1.5px solid var(--border);color:var(--muted);cursor:pointer;transition:all .15s;}
     .metric-btn.active{background:var(--brand-bg);border-color:rgba(0,71,255,0.3);color:var(--brand);}
-    .axis-btn{background:var(--bg3);border:1.5px solid var(--border);color:var(--muted);font-family:var(--font-d);font-size:.75rem;font-weight:600;letter-spacing:.03em;text-transform:uppercase;padding:.28rem .72rem;border-radius:4px;cursor:pointer;transition:all .15s;}
+    .axis-btn{background:var(--bg3);border:1.5px solid var(--border);color:var(--muted);font-family:var(--font-d);font-size:1.03rem;font-weight:600;letter-spacing:.03em;text-transform:uppercase;padding:.28rem .72rem;border-radius:4px;cursor:pointer;transition:all .15s;}
     .axis-btn.active{background:var(--brand-bg);border-color:rgba(0,71,255,0.3);color:var(--brand);}
 
     /* MAP */
@@ -172,33 +169,33 @@
     .leaflet-container{background:#dce5f0!important;font-family:var(--font-m)!important;}
     .leaflet-control-zoom a{background:var(--bg2)!important;border-color:var(--border)!important;color:var(--text2)!important;}
     .leaflet-control-zoom a:hover{background:var(--bg3)!important;color:var(--text)!important;}
-    .leaflet-control-attribution{background:rgba(244,247,251,.9)!important;color:var(--muted)!important;font-size:.5rem!important;}
+    .leaflet-control-attribution{background:rgba(244,247,251,.9)!important;color:var(--muted)!important;font-size:1.35rem!important;}
     .leaflet-control-attribution a{color:var(--muted)!important;}
-    .map-tooltip{background:var(--bg2)!important;border:1.5px solid var(--border)!important;border-radius:5px!important;color:var(--text)!important;font-family:var(--font-m)!important;font-size:.63rem!important;padding:.28rem .55rem!important;box-shadow:0 8px 20px rgba(0,0,0,.1)!important;}
+    .map-tooltip{background:var(--bg2)!important;border:1.5px solid var(--border)!important;border-radius:5px!important;color:var(--text)!important;font-family:var(--font-m)!important;font-size:1.03rem!important;padding:.28rem .55rem!important;box-shadow:0 8px 20px rgba(0,0,0,.1)!important;}
     .map-legend{display:flex;flex-wrap:wrap;gap:.5rem;padding:.62rem 1.2rem;border-top:1px solid var(--border2);}
-    .map-legend-item{display:flex;align-items:center;gap:.35rem;font-family:var(--font-m);font-size:.6rem;color:var(--muted);}
+    .map-legend-item{display:flex;align-items:center;gap:.35rem;font-family:var(--font-m);font-size:.75rem;color:var(--muted);}
     .map-legend-line{width:16px;height:3px;border-radius:2px;}
 
     /* HISTORY */
     .history-card{background:var(--bg2);border:1.5px solid var(--border);border-left:3px solid var(--accent,var(--brand));border-radius:var(--rl);padding:.9rem 1rem;cursor:pointer;transition:all .18s;box-shadow:var(--shadow);}
     .history-card:hover{background:var(--bg3);transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,71,255,0.1);}
-    .history-badge{display:inline-flex;align-items:center;gap:.27rem;background:var(--brand-bg);border:1.5px solid rgba(0,71,255,0.15);border-radius:4px;padding:.15rem .5rem;font-family:var(--font-d);font-size:.68rem;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--brand);}
+    .history-badge{display:inline-flex;align-items:center;gap:.27rem;background:var(--brand-bg);border:1.5px solid rgba(0,71,255,0.15);border-radius:4px;padding:.15rem .5rem;font-family:var(--font-d);font-size:.93rem;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--brand);}
     .history-stat{display:flex;flex-direction:column;gap:.08rem;}
-    .history-stat-val{font-family:var(--font-d);font-weight:700;font-size:.98rem;color:var(--text);line-height:1;}
-    .history-stat-label{font-family:var(--font-m);font-size:.55rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;}
+    .history-stat-val{font-family:var(--font-d);font-weight:700;font-size:1.14rem;color:var(--text);line-height:1;}
+    .history-stat-label{font-family:var(--font-m);font-size:1.35rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;}
     .history-empty{text-align:center;padding:3.5rem 2rem;color:var(--muted);}
     .history-empty-icon{width:48px;height:48px;margin:0 auto 1rem;background:var(--bg3);border-radius:var(--r);display:flex;align-items:center;justify-content:center;}
-    .history-delete-btn{background:none;border:1.5px solid transparent;border-radius:4px;color:var(--muted);padding:.2rem .48rem;font-size:.62rem;font-family:var(--font-m);cursor:pointer;transition:all .15s;}
+    .history-delete-btn{background:none;border:1.5px solid transparent;border-radius:4px;color:var(--muted);padding:.2rem .48rem;font-size:1.02rem;font-family:var(--font-m);cursor:pointer;transition:all .15s;}
     .history-delete-btn:hover{background:rgba(220,38,38,0.07);color:#dc2626;border-color:rgba(220,38,38,0.2);}
-    .history-search{background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--r);padding:.55rem .95rem;color:var(--text);font-family:var(--font-m);font-size:.76rem;outline:none;transition:border-color .15s,box-shadow .15s;width:100%;}
+    .history-search{background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--r);padding:.55rem .95rem;color:var(--text);font-family:var(--font-m);font-size:1.04rem;outline:none;transition:border-color .15s,box-shadow .15s;width:100%;}
     .history-search:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(0,71,255,0.10);}
     .history-search::placeholder{color:var(--muted);}
-    .filter-chip{background:var(--bg3);border:1.5px solid var(--border);border-radius:4px;padding:.24rem .72rem;font-family:var(--font-d);font-size:.7rem;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);cursor:pointer;transition:all .15s;white-space:nowrap;}
+    .filter-chip{background:var(--bg3);border:1.5px solid var(--border);border-radius:4px;padding:.24rem .72rem;font-family:var(--font-d);font-size:.85rem;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);cursor:pointer;transition:all .15s;white-space:nowrap;}
     .filter-chip.active{background:var(--brand-bg);border-color:rgba(0,71,255,0.25);color:var(--brand);}
     .history-list{max-height:64vh;overflow-y:auto;}
 
     /* CHALLENGE */
-    .challenge-btn{display:inline-flex;align-items:center;gap:.3rem;background:var(--blue-bg);border:1.5px solid rgba(0,71,255,0.2);border-radius:4px;padding:.24rem .6rem;font-family:var(--font-d);font-size:.7rem;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--blue);cursor:pointer;transition:all .15s;white-space:nowrap;}
+    .challenge-btn{display:inline-flex;align-items:center;gap:.3rem;background:var(--blue-bg);border:1.5px solid rgba(0,71,255,0.2);border-radius:4px;padding:.24rem .6rem;font-family:var(--font-d);font-size:.85rem;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--blue);cursor:pointer;transition:all .15s;white-space:nowrap;}
     .challenge-btn:hover{border-color:rgba(0,71,255,0.4);background:rgba(0,71,255,0.1);}
     .modal-overlay{position:fixed;inset:0;background:rgba(10,10,18,.5);backdrop-filter:blur(8px);z-index:200;display:flex;align-items:center;justify-content:center;padding:1.5rem;animation:fadeIn .18s ease;}
     .modal-overlay.hiding{animation:fadeOut .18s ease forwards;}
@@ -208,23 +205,23 @@
     .modal-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--brand),#60a5fa);}
     @keyframes slideUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
     .modal-body{padding:1.5rem;}
-    .modal-close{position:absolute;top:.78rem;right:.78rem;background:var(--bg3);border:1.5px solid var(--border);border-radius:4px;color:var(--muted);width:26px;height:26px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.7rem;transition:all .15s;}
+    .modal-close{position:absolute;top:.78rem;right:.78rem;background:var(--bg3);border:1.5px solid var(--border);border-radius:4px;color:var(--muted);width:26px;height:26px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.85rem;transition:all .15s;}
     .modal-close:hover{background:var(--brand-bg);color:var(--brand);border-color:rgba(0,71,255,0.25);}
     .link-box{display:flex;gap:.38rem;background:var(--bg3);border:1.5px solid var(--border);border-radius:5px;padding:.12rem .12rem .12rem .68rem;align-items:center;}
-    .link-box input{flex:1;background:none;border:none;outline:none;font-family:var(--font-m);font-size:.67rem;color:var(--muted);min-width:0;}
-    .link-copy-btn{flex-shrink:0;background:var(--brand);color:#fff;border:none;border-radius:4px;padding:.42rem .82rem;font-family:var(--font-d);font-weight:700;font-size:.75rem;letter-spacing:.03em;text-transform:uppercase;cursor:pointer;transition:all .15s;white-space:nowrap;}
+    .link-box input{flex:1;background:none;border:none;outline:none;font-family:var(--font-m);font-size:1.08rem;color:var(--muted);min-width:0;}
+    .link-copy-btn{flex-shrink:0;background:var(--brand);color:#fff;border:none;border-radius:4px;padding:.42rem .82rem;font-family:var(--font-d);font-weight:700;font-size:1.03rem;letter-spacing:.03em;text-transform:uppercase;cursor:pointer;transition:all .15s;white-space:nowrap;}
     .link-copy-btn:hover{background:var(--brand2);}
     .link-copy-btn.copied{background:var(--green);}
     .share-option{display:flex;align-items:center;gap:.6rem;padding:.62rem .78rem;background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--r);cursor:pointer;transition:all .15s;text-decoration:none;}
     .share-option:hover{background:var(--bg4);}
-    .share-option-icon{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0;}
-    .share-option-label{font-family:var(--font-d);font-weight:600;font-size:.8rem;letter-spacing:.03em;color:var(--text);}
-    .share-option-sub{font-family:var(--font-m);font-size:.57rem;color:var(--muted);margin-top:.07rem;}
+    .share-option-icon{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:1.8rem;flex-shrink:0;}
+    .share-option-label{font-family:var(--font-d);font-weight:600;font-size:.95rem;letter-spacing:.03em;color:var(--text);}
+    .share-option-sub{font-family:var(--font-m);font-size:.93rem;color:var(--muted);margin-top:.07rem;}
     #challengeBanner{display:none;background:var(--blue-bg);border:1.5px solid rgba(0,71,255,0.18);border-radius:var(--r);padding:.82rem 1.05rem;margin-bottom:1.05rem;animation:slideDown .3s ease;}
     #challengeBanner.visible{display:flex;align-items:center;gap:.82rem;}
     @keyframes slideDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
     .challenge-pulse{width:36px;height:36px;border-radius:8px;background:var(--blue-bg);border:1.5px solid rgba(0,71,255,0.2);display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;}
-    .challenge-accept-btn{flex-shrink:0;background:var(--blue);color:#fff;border:none;border-radius:4px;padding:.42rem .9rem;font-family:var(--font-d);font-weight:700;font-size:.78rem;letter-spacing:.03em;text-transform:uppercase;cursor:pointer;transition:all .15s;white-space:nowrap;box-shadow:0 2px 8px rgba(0,71,255,0.3);}
+    .challenge-accept-btn{flex-shrink:0;background:var(--blue);color:#fff;border:none;border-radius:4px;padding:.42rem .9rem;font-family:var(--font-d);font-weight:700;font-size:1.06rem;letter-spacing:.03em;text-transform:uppercase;cursor:pointer;transition:all .15s;white-space:nowrap;box-shadow:0 2px 8px rgba(0,71,255,0.3);}
     .challenge-accept-btn:hover{opacity:.85;}
     #toast{transition:opacity .3s;}
     #toast.visible{opacity:1;}
@@ -243,13 +240,13 @@
           <circle cx="19" cy="7" r="2" fill="rgba(255,255,255,0.5)" opacity=".5"/>
         </svg>
       </div>
-      <div style="font-family:var(--font-d);font-weight:800;font-size:1.55rem;letter-spacing:.07em;text-transform:uppercase;line-height:1;">TrackLab</div>
-      <div style="font-family:var(--font-m);font-size:.58rem;color:var(--muted);margin-top:.28rem;letter-spacing:.07em;">PERFORMANCE ANALYTICS</div>
+      <div style="font-family:var(--font-d);font-weight:800;font-size:2.6rem;letter-spacing:.07em;text-transform:uppercase;line-height:1;">TrackLab</div>
+      <div style="font-family:var(--font-m);font-size:1.8rem;color:var(--muted);margin-top:.28rem;letter-spacing:.07em;">PERFORMANCE ANALYTICS</div>
     </div>
     <div class="login-card">
       <div id="loginMode">
-        <div style="font-family:var(--font-d);font-weight:700;font-size:1.25rem;margin-bottom:.22rem;">Bem-vindo de volta</div>
-        <div style="font-family:var(--font-m);font-size:.68rem;color:var(--muted);margin-bottom:1.4rem;">Entre na sua conta para continuar</div>
+        <div style="font-family:var(--font-d);font-weight:700;font-size:1.35rem;margin-bottom:.22rem;">Bem-vindo de volta</div>
+        <div style="font-family:var(--font-m);font-size:.93rem;color:var(--muted);margin-bottom:1.4rem;">Entre na sua conta para continuar</div>
         <div id="loginError" class="login-error" style="margin-bottom:.85rem;"></div>
         <div style="display:flex;flex-direction:column;gap:.72rem;">
           <div><label class="login-label" for="loginEmail">Email</label><input id="loginEmail" type="email" class="login-input" placeholder="atleta@tracklab.io"/></div>
@@ -257,11 +254,11 @@
         </div>
         <button class="login-btn" style="margin-top:1.3rem;" onclick="doLogin()">Entrar</button>
         <div class="login-divider" style="margin:1.1rem 0;">ou</div>
-        <p style="text-align:center;font-family:var(--font-m);font-size:.7rem;color:var(--muted);">Não tem conta? <button class="toggle-auth" onclick="switchToRegister()">Criar conta</button></p>
+        <p style="text-align:center;font-family:var(--font-m);font-size:.85rem;color:var(--muted);">Não tem conta? <button class="toggle-auth" onclick="switchToRegister()">Criar conta</button></p>
       </div>
       <div id="registerMode" style="display:none;">
-        <div style="font-family:var(--font-d);font-weight:700;font-size:1.25rem;margin-bottom:.22rem;">Criar conta</div>
-        <div style="font-family:var(--font-m);font-size:.68rem;color:var(--muted);margin-bottom:1.4rem;">Comece a rastrear sua performance</div>
+        <div style="font-family:var(--font-d);font-weight:700;font-size:1.35rem;margin-bottom:.22rem;">Criar conta</div>
+        <div style="font-family:var(--font-m);font-size:.93rem;color:var(--muted);margin-bottom:1.4rem;">Comece a rastrear sua performance</div>
         <div id="registerError" class="login-error" style="margin-bottom:.85rem;"></div>
         <div style="display:flex;flex-direction:column;gap:.72rem;">
           <div><label class="login-label">Nome</label><input id="regName" type="text" class="login-input" placeholder="Seu nome"/></div>
@@ -269,10 +266,10 @@
           <div><label class="login-label">Senha</label><input id="regPass" type="password" class="login-input" placeholder="Mínimo 6 caracteres"/></div>
         </div>
         <button class="login-btn" style="margin-top:1.3rem;" onclick="doRegister()">Criar conta</button>
-        <p style="text-align:center;font-family:var(--font-m);font-size:.7rem;color:var(--muted);margin-top:1rem;">Já tem conta? <button class="toggle-auth" onclick="switchToLogin()">Entrar</button></p>
+        <p style="text-align:center;font-family:var(--font-m);font-size:.85rem;color:var(--muted);margin-top:1rem;">Já tem conta? <button class="toggle-auth" onclick="switchToLogin()">Entrar</button></p>
       </div>
     </div>
-    <p style="text-align:center;font-family:var(--font-m);font-size:.58rem;color:var(--muted);margin-top:1.1rem;opacity:.45;">Demo: qualquer email + senha ≥ 6 chars</p>
+    <p style="text-align:center;font-family:var(--font-m);font-size:1.8rem;color:var(--muted);margin-top:1.1rem;opacity:.45;">Demo: qualquer email + senha ≥ 6 chars</p>
   </div>
 </div>
 
@@ -304,7 +301,7 @@
       </nav>
     </div>
     <div style="display:flex;align-items:center;gap:.5rem;flex-shrink:0;">
-      <button id="clearBtn" class="hidden" style="font-family:var(--font-m);font-size:.66rem;color:var(--muted);border:1.5px solid var(--border);background:none;border-radius:var(--r);padding:.28rem .65rem;cursor:pointer;transition:all .15s;" onmouseover="this.style.color='var(--brand)';this.style.borderColor='rgba(0,71,255,.35)'" onmouseout="this.style.color='var(--muted)';this.style.borderColor='var(--border)'">✕ Limpar</button>
+      <button id="clearBtn" class="hidden" style="font-family:var(--font-m);font-size:1.06rem;color:var(--muted);border:1.5px solid var(--border);background:none;border-radius:var(--r);padding:.28rem .65rem;cursor:pointer;transition:all .15s;" onmouseover="this.style.color='var(--brand)';this.style.borderColor='rgba(0,71,255,.35)'" onmouseout="this.style.color='var(--muted)';this.style.borderColor='var(--border)'">✕ Limpar</button>
       <div style="position:relative;">
         <div class="user-chip" onclick="toggleDropdown()" id="userChip">
           <div class="user-avatar" id="userAvatar">?</div>
@@ -313,8 +310,8 @@
         </div>
         <div class="user-dropdown" id="userDropdown">
           <div style="padding:.52rem .75rem .42rem;border-bottom:1px solid var(--border2);margin-bottom:.3rem;">
-            <div style="font-family:var(--font-d);font-weight:700;font-size:.88rem;color:var(--text);" id="dropdownName">Nome</div>
-            <div style="font-family:var(--font-m);font-size:.6rem;color:var(--muted);" id="dropdownEmail">email</div>
+            <div style="font-family:var(--font-d);font-weight:700;font-size:1.03rem;color:var(--text);" id="dropdownName">Nome</div>
+            <div style="font-family:var(--font-m);font-size:.75rem;color:var(--muted);" id="dropdownEmail">email</div>
           </div>
           <button class="dropdown-item" onclick="switchTab('history');toggleDropdown(false);">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -343,14 +340,14 @@
   <div id="uploadTab">
     <section id="uploadSection">
       <div style="text-align:center;margin-bottom:1.9rem;">
-        <div style="font-family:var(--font-d);font-size:2.3rem;font-weight:800;letter-spacing:.02em;line-height:1;margin-bottom:.45rem;">Carregue suas <span style="color:var(--brand);">atividades</span></div>
-        <p style="font-family:var(--font-m);font-size:.72rem;color:var(--muted);">Suporte a arquivos .TCX e .GPX · Múltiplos arquivos simultâneos</p>
+        <div style="font-family:var(--font-d);font-size:2.6rem;font-weight:800;letter-spacing:.02em;line-height:1;margin-bottom:.45rem;">Carregue suas <span style="color:var(--brand);">atividades</span></div>
+        <p style="font-family:var(--font-m);font-size:1.8rem;color:var(--muted);">Suporte a arquivos .TCX e .GPX · Múltiplos arquivos simultâneos</p>
       </div>
       <div id="dropZone" class="drop-zone" onclick="document.getElementById('fileInput').click()">
         <div class="drop-zone-icon">📂</div>
-        <div style="font-family:var(--font-d);font-size:1.1rem;font-weight:700;color:var(--text);margin-bottom:.38rem;">Arraste arquivos aqui</div>
-        <div style="font-family:var(--font-m);font-size:.7rem;color:var(--muted);margin-bottom:.22rem;">ou clique para selecionar · .tcx, .gpx</div>
-        <div style="font-family:var(--font-m);font-size:.62rem;color:var(--muted);opacity:.55;">1 arquivo para visualizar · 2+ para comparar</div>
+        <div style="font-family:var(--font-d);font-size:1.8rem;font-weight:700;color:var(--text);margin-bottom:.38rem;">Arraste arquivos aqui</div>
+        <div style="font-family:var(--font-m);font-size:.85rem;color:var(--muted);margin-bottom:.22rem;">ou clique para selecionar · .tcx, .gpx</div>
+        <div style="font-family:var(--font-m);font-size:1.02rem;color:var(--muted);opacity:.55;">1 arquivo para visualizar · 2+ para comparar</div>
         <input type="file" id="fileInput" multiple accept=".tcx,.gpx" style="display:none;"/>
       </div>
       <div id="fileList" class="hidden" style="margin-top:.9rem;display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:.55rem;"></div>
@@ -362,8 +359,8 @@
     <!-- DASHBOARD -->
     <section id="dashboard" class="hidden" style="margin-top:.5rem;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.1rem;">
-        <button id="backBtn" style="font-family:var(--font-m);font-size:.7rem;color:var(--muted);background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:.38rem;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">← Carregar outros arquivos</button>
-        <span style="font-family:var(--font-m);font-size:.62rem;color:var(--muted);" id="activityCount"></span>
+        <button id="backBtn" style="font-family:var(--font-m);font-size:.85rem;color:var(--muted);background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:.38rem;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">← Carregar outros arquivos</button>
+        <span style="font-family:var(--font-m);font-size:1.02rem;color:var(--muted);" id="activityCount"></span>
       </div>
 
       <!-- Summary cards -->
@@ -406,10 +403,10 @@
           </div>
         </div>
         <div style="padding:.7rem 1.2rem;overflow-x:auto;">
-          <table style="width:100%;font-size:.78rem;" id="compTable">
+          <table style="width:100%;font-size:1.06rem;" id="compTable">
             <thead>
               <tr style="border-bottom:1px solid var(--border2);">
-                <th style="text-align:left;padding:.45rem 1.2rem .45rem 0;font-family:var(--font-d);font-size:.65rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);">Métrica</th>
+                <th style="text-align:left;padding:.45rem 1.2rem .45rem 0;font-family:var(--font-d);font-size:1.35rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);">Métrica</th>
               </tr>
             </thead>
             <tbody id="compTableBody"></tbody>
@@ -420,11 +417,11 @@
       <!-- Map -->
       <div id="mapSection" class="hidden">
         <div class="map-header">
-          <div style="font-family:var(--font-d);font-size:.87rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;display:flex;align-items:center;gap:.45rem;">
+          <div style="font-family:var(--font-d);font-size:1.02rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;display:flex;align-items:center;gap:.45rem;">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
             Trajetos no Mapa
           </div>
-          <span style="font-family:var(--font-m);font-size:.58rem;color:var(--muted);">● início &nbsp; ◆ fim</span>
+          <span style="font-family:var(--font-m);font-size:1.8rem;color:var(--muted);">● início &nbsp; ◆ fim</span>
         </div>
         <div id="routeMap"></div>
         <div class="map-legend" id="mapLegend"></div>
@@ -447,7 +444,7 @@
           <div style="position:relative;height:320px;">
             <canvas id="mainChart"></canvas>
           </div>
-          <p style="font-family:var(--font-m);font-size:.58rem;color:var(--muted);margin-top:.82rem;text-align:center;">Scroll/pinch para zoom · Clique na legenda para mostrar/ocultar</p>
+          <p style="font-family:var(--font-m);font-size:1.8rem;color:var(--muted);margin-top:.82rem;text-align:center;">Scroll/pinch para zoom · Clique na legenda para mostrar/ocultar</p>
         </div>
       </div>
     </section>
@@ -458,19 +455,19 @@
     <div id="challengeBanner">
       <div class="challenge-pulse">⚔️</div>
       <div style="flex:1;min-width:0;">
-        <div style="font-family:var(--font-d);font-weight:700;font-size:.88rem;color:var(--text);margin-bottom:.15rem;">Desafio recebido! <span id="challengerName" style="color:var(--blue);"></span></div>
-        <div style="font-family:var(--font-m);font-size:.63rem;color:var(--muted);">Faça upload do seu treino para comparar</div>
+        <div style="font-family:var(--font-d);font-weight:700;font-size:1.03rem;color:var(--text);margin-bottom:.15rem;">Desafio recebido! <span id="challengerName" style="color:var(--blue);"></span></div>
+        <div style="font-family:var(--font-m);font-size:1.03rem;color:var(--muted);">Faça upload do seu treino para comparar</div>
       </div>
       <button class="challenge-accept-btn" onclick="acceptChallenge()">Aceitar →</button>
     </div>
     <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.35rem;">
       <div>
-        <div style="font-family:var(--font-d);font-weight:800;font-size:1.9rem;letter-spacing:.02em;line-height:1;">Histórico de <span style="color:var(--brand);">Treinos</span></div>
-        <div style="font-family:var(--font-m);font-size:.66rem;color:var(--muted);margin-top:.32rem;">Todas as atividades carregadas e comparadas</div>
+        <div style="font-family:var(--font-d);font-weight:800;font-size:2.6rem;letter-spacing:.02em;line-height:1;">Histórico de <span style="color:var(--brand);">Treinos</span></div>
+        <div style="font-family:var(--font-m);font-size:1.06rem;color:var(--muted);margin-top:.32rem;">Todas as atividades carregadas e comparadas</div>
       </div>
       <div style="display:flex;align-items:center;gap:.55rem;">
-        <span id="historyCount" style="font-family:var(--font-m);font-size:.62rem;color:var(--muted);"></span>
-        <button onclick="clearHistory()" style="font-family:var(--font-m);font-size:.62rem;color:rgba(220,38,38,.6);border:1.5px solid rgba(220,38,38,.15);background:none;border-radius:var(--r);padding:.28rem .62rem;cursor:pointer;transition:all .15s;" onmouseover="this.style.color='#dc2626';this.style.borderColor='rgba(220,38,38,.35)'" onmouseout="this.style.color='rgba(220,38,38,.6)';this.style.borderColor='rgba(220,38,38,.15)'">Limpar tudo</button>
+        <span id="historyCount" style="font-family:var(--font-m);font-size:1.02rem;color:var(--muted);"></span>
+        <button onclick="clearHistory()" style="font-family:var(--font-m);font-size:1.02rem;color:rgba(220,38,38,.6);border:1.5px solid rgba(220,38,38,.15);background:none;border-radius:var(--r);padding:.28rem .62rem;cursor:pointer;transition:all .15s;" onmouseover="this.style.color='#dc2626';this.style.borderColor='rgba(220,38,38,.35)'" onmouseout="this.style.color='rgba(220,38,38,.6)';this.style.borderColor='rgba(220,38,38,.15)'">Limpar tudo</button>
       </div>
     </div>
     <div style="display:flex;flex-direction:column;gap:.6rem;margin-bottom:1.15rem;">
@@ -496,22 +493,22 @@
     <button class="modal-close" onclick="closeShareModal()">✕</button>
     <div class="modal-body">
       <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.2rem;">
-        <div style="width:38px;height:38px;border-radius:8px;background:var(--brand-bg);border:1px solid rgba(224,58,30,.25);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;">⚔️</div>
+        <div style="width:38px;height:38px;border-radius:8px;background:var(--brand-bg);border:1px solid rgba(224,58,30,.25);display:flex;align-items:center;justify-content:center;font-size:1.8rem;flex-shrink:0;">⚔️</div>
         <div>
-          <div style="font-family:var(--font-d);font-weight:700;font-size:1.05rem;color:var(--text);">Desafiar um amigo</div>
-          <div style="font-family:var(--font-m);font-size:.62rem;color:var(--muted);margin-top:.13rem;">Seu treino será incluído no link</div>
+          <div style="font-family:var(--font-d);font-weight:700;font-size:1.35rem;color:var(--text);">Desafiar um amigo</div>
+          <div style="font-family:var(--font-m);font-size:1.02rem;color:var(--muted);margin-top:.13rem;">Seu treino será incluído no link</div>
         </div>
       </div>
       <div id="shareActivityPreview" style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:.7rem .85rem;margin-bottom:1rem;display:flex;flex-wrap:wrap;gap:.32rem;"></div>
       <div style="margin-bottom:1rem;">
-        <label style="font-family:var(--font-m);font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:.42rem;">Link do desafio</label>
+        <label style="font-family:var(--font-m);font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:.42rem;">Link do desafio</label>
         <div class="link-box">
           <input type="text" id="shareLink" readonly onclick="this.select()"/>
           <button class="link-copy-btn" id="copyBtn" onclick="copyShareLink()">Copiar</button>
         </div>
       </div>
       <div>
-        <label style="font-family:var(--font-m);font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:.5rem;">Compartilhar via</label>
+        <label style="font-family:var(--font-m);font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:.5rem;">Compartilhar via</label>
         <div style="display:flex;flex-direction:column;gap:.32rem;">
           <div class="share-option" onclick="shareViaWhatsApp()">
             <div class="share-option-icon" style="background:rgba(37,211,102,.1);border:1px solid rgba(37,211,102,.2);">💬</div>
@@ -525,14 +522,14 @@
           </div>
         </div>
       </div>
-      <p style="font-family:var(--font-m);font-size:.56rem;color:var(--muted);margin-top:.85rem;text-align:center;opacity:.55;">O link expira em 7 dias · Dados codificados no URL</p>
+      <p style="font-family:var(--font-m);font-size:1.08rem;color:var(--muted);margin-top:.85rem;text-align:center;opacity:.55;">O link expira em 7 dias · Dados codificados no URL</p>
     </div>
   </div>
 </div>
 
 <!-- Toast -->
 <div id="toast" class="fixed bottom-5 right-5 z-50 hidden">
-  <div style="background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--r);padding:.6rem .95rem;font-family:var(--font-m);font-size:.76rem;color:var(--text);box-shadow:0 8px 24px rgba(0,71,255,0.12),0 2px 8px rgba(0,0,0,0.08);display:flex;align-items:center;gap:.5rem;">
+  <div style="background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--r);padding:.6rem .95rem;font-family:var(--font-m);font-size:1.04rem;color:var(--text);box-shadow:0 8px 24px rgba(0,71,255,0.12),0 2px 8px rgba(0,0,0,0.08);display:flex;align-items:center;gap:.5rem;">
     <span id="toastIcon">⚠</span><span id="toastMsg"></span>
   </div>
 </div>
@@ -575,11 +572,11 @@ function renderHistory(){
   let filtered=hist.filter(s=>{if(search&&!s.activities.some(a=>a.filename.toLowerCase().includes(search)||(a.label||'').toLowerCase().includes(search)))return false;if(historyFilter==='tcx'&&!s.activities.some(a=>a.filename.toLowerCase().endsWith('.tcx')))return false;if(historyFilter==='gpx'&&!s.activities.some(a=>a.filename.toLowerCase().endsWith('.gpx')))return false;if(historyFilter==='recent'&&(now-new Date(s.date))>sevenD)return false;return true;});
   const count=document.getElementById('historyCount');if(count)count.textContent=`${filtered.length} sessão${filtered.length!==1?'ões':''}`;
   const list=document.getElementById('historyList');if(!list)return;
-  if(!filtered.length){list.innerHTML=`<div class="history-empty"><div class="history-empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div style="font-family:var(--font-d);font-size:1.05rem;font-weight:600;color:var(--muted);margin-bottom:.38rem;">${hist.length===0?'Nenhum treino ainda':'Nenhum resultado'}</div><div style="font-family:var(--font-m);font-size:.65rem;color:var(--muted);opacity:.55;">${hist.length===0?'Compare atividades para salvar no histórico':'Tente ajustar os filtros'}</div></div>`;return;}
+  if(!filtered.length){list.innerHTML=`<div class="history-empty"><div class="history-empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div style="font-family:var(--font-d);font-size:1.35rem;font-weight:600;color:var(--muted);margin-bottom:.38rem;">${hist.length===0?'Nenhum treino ainda':'Nenhum resultado'}</div><div style="font-family:var(--font-m);font-size:1.35rem;color:var(--muted);opacity:.55;">${hist.length===0?'Compare atividades para salvar no histórico':'Tente ajustar os filtros'}</div></div>`;return;}
   const groups={};filtered.forEach(s=>{const k=fmtDate(s.date);if(!groups[k])groups[k]=[];groups[k].push(s);});
   let html='';
   for(const[dk,sessions]of Object.entries(groups)){
-    html+=`<div style="margin-bottom:1.6rem;"><div style="display:flex;align-items:center;gap:.55rem;margin-bottom:.68rem;"><span style="font-family:var(--font-m);font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">${dk}</span><div style="flex:1;height:1px;background:var(--border2);"></div><span style="font-family:var(--font-m);font-size:.56rem;color:var(--muted);opacity:.55;">${sessions.length} sessão${sessions.length!==1?'ões':''}</span></div><div style="display:flex;flex-direction:column;gap:.55rem;">`;
+    html+=`<div style="margin-bottom:1.6rem;"><div style="display:flex;align-items:center;gap:.55rem;margin-bottom:.68rem;"><span style="font-family:var(--font-m);font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">${dk}</span><div style="flex:1;height:1px;background:var(--border2);"></div><span style="font-family:var(--font-m);font-size:1.08rem;color:var(--muted);opacity:.55;">${sessions.length} sessão${sessions.length!==1?'ões':''}</span></div><div style="display:flex;flex-direction:column;gap:.55rem;">`;
     sessions.forEach(s=>{
       const sport=detectSport(s.activities.map(a=>a.label+' '+a.filename).join(' '));
       const ac=SPORT_COLORS[sport]||'#e03a1e';
@@ -590,10 +587,10 @@ function renderHistory(){
       html+=`<div class="history-card" style="--accent:${ac};" onclick="loadHistorySession('${s.id}')">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.7rem;margin-bottom:.68rem;">
           <div style="display:flex;align-items:center;gap:.55rem;">
-            <div style="width:30px;height:30px;border-radius:6px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:.88rem;flex-shrink:0;">${sportIcon(sport)}</div>
+            <div style="width:30px;height:30px;border-radius:6px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:1.03rem;flex-shrink:0;">${sportIcon(sport)}</div>
             <div>
-              <div style="font-family:var(--font-d);font-weight:700;font-size:.88rem;color:var(--text);line-height:1.2;">${s.activities.length} ${s.activities.length===1?'atividade':'atividades'}</div>
-              <div style="font-family:var(--font-m);font-size:.56rem;color:var(--muted);margin-top:.12rem;">${fmtTime(s.date)} · ${relativeDate(s.date)}</div>
+              <div style="font-family:var(--font-d);font-weight:700;font-size:1.03rem;color:var(--text);line-height:1.2;">${s.activities.length} ${s.activities.length===1?'atividade':'atividades'}</div>
+              <div style="font-family:var(--font-m);font-size:1.08rem;color:var(--muted);margin-top:.12rem;">${fmtTime(s.date)} · ${relativeDate(s.date)}</div>
             </div>
           </div>
           <div style="display:flex;align-items:center;gap:.38rem;">
@@ -606,7 +603,7 @@ function renderHistory(){
           </div>
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:.32rem;margin-bottom:.68rem;">
-          ${s.activities.map(a=>`<span style="display:inline-flex;align-items:center;gap:.25rem;background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:.1rem .45rem;font-family:var(--font-m);font-size:.56rem;color:var(--muted);"><span style="width:5px;height:5px;border-radius:50%;background:${a.color};flex-shrink:0;"></span>${a.filename}</span>`).join('')}
+          ${s.activities.map(a=>`<span style="display:inline-flex;align-items:center;gap:.25rem;background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:.1rem .45rem;font-family:var(--font-m);font-size:1.08rem;color:var(--muted);"><span style="width:5px;height:5px;border-radius:50%;background:${a.color};flex-shrink:0;"></span>${a.filename}</span>`).join('')}
         </div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.7rem;padding-top:.68rem;border-top:1px solid var(--border2);">
           <div class="history-stat"><div class="history-stat-val">${td>=1000?(td/1000).toFixed(2)+' km':Math.round(td)+' m'}</div><div class="history-stat-label">Distância</div></div>
@@ -626,7 +623,7 @@ function encodeChallenge(s){try{return btoa(unescape(encodeURIComponent(JSON.str
 function decodeChallenge(enc){try{return JSON.parse(decodeURIComponent(escape(atob(enc))));}catch{return null;}}
 function buildShareUrl(enc){return`${window.location.href.split('#')[0]}#challenge=${enc}`;}
 let _sharingSessionId=null;
-function openShareModal(sessionId){const s=getHistory().find(s=>s.id===sessionId);if(!s)return;_sharingSessionId=sessionId;document.getElementById('shareActivityPreview').innerHTML=s.activities.map(a=>`<span style="display:inline-flex;align-items:center;gap:.28rem;background:var(--bg4);border:1px solid var(--border);border-radius:4px;padding:.16rem .5rem;font-family:var(--font-m);font-size:.6rem;color:var(--muted);"><span style="width:6px;height:6px;border-radius:50%;background:${a.color};flex-shrink:0;"></span>${a.filename}<span style="opacity:.4;">·</span><span style="color:${a.color};">${a.summary.totalDistM>=1000?(a.summary.totalDistM/1000).toFixed(1)+'km':Math.round(a.summary.totalDistM)+'m'}</span></span>`).join('');const enc=encodeChallenge(s);if(!enc){toast('Erro ao gerar link','error');return;}document.getElementById('shareLink').value=buildShareUrl(enc);const btn=document.getElementById('copyBtn');btn.textContent='Copiar';btn.classList.remove('copied');document.getElementById('challengeModal').style.display='flex';}
+function openShareModal(sessionId){const s=getHistory().find(s=>s.id===sessionId);if(!s)return;_sharingSessionId=sessionId;document.getElementById('shareActivityPreview').innerHTML=s.activities.map(a=>`<span style="display:inline-flex;align-items:center;gap:.28rem;background:var(--bg4);border:1px solid var(--border);border-radius:4px;padding:.16rem .5rem;font-family:var(--font-m);font-size:.75rem;color:var(--muted);"><span style="width:6px;height:6px;border-radius:50%;background:${a.color};flex-shrink:0;"></span>${a.filename}<span style="opacity:.4;">·</span><span style="color:${a.color};">${a.summary.totalDistM>=1000?(a.summary.totalDistM/1000).toFixed(1)+'km':Math.round(a.summary.totalDistM)+'m'}</span></span>`).join('');const enc=encodeChallenge(s);if(!enc){toast('Erro ao gerar link','error');return;}document.getElementById('shareLink').value=buildShareUrl(enc);const btn=document.getElementById('copyBtn');btn.textContent='Copiar';btn.classList.remove('copied');document.getElementById('challengeModal').style.display='flex';}
 function closeShareModal(){const m=document.getElementById('challengeModal');m.classList.add('hiding');setTimeout(()=>{m.style.display='none';m.classList.remove('hiding');},200);}
 function copyShareLink(){navigator.clipboard.writeText(document.getElementById('shareLink').value).then(()=>{const b=document.getElementById('copyBtn');b.textContent='✓ Copiado!';b.classList.add('copied');setTimeout(()=>{b.textContent='Copiar';b.classList.remove('copied');},2500);}).catch(()=>{document.getElementById('shareLink').select();document.execCommand('copy');toast('Link copiado!','ok');});}
 function shareViaWhatsApp(){const link=document.getElementById('shareLink').value;const name=currentUser?.name.split(' ')[0]||'alguém';window.open(`https://wa.me/?text=${encodeURIComponent(`⚔️ *Desafio TrackLab!*\n${name} te desafia!\n${link}`)}`,'_blank');}
