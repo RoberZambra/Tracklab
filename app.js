@@ -674,6 +674,209 @@ function renderZones() {
   }
 }
 
+// ──────────────────────────────────────────────────────
+// SPLITS — por km
+// ──────────────────────────────────────────────────────
+
+/**
+ * Calcula splits de 1 km a partir dos pontos de uma atividade.
+ * Retorna array de { km, durationSec, paceSecPerKm, avgHR, elevGain, elevLoss }
+ */
+function computeSplits(activity) {
+  const pts = activity.points.filter(p => p.distanceM != null);
+  if (pts.length < 2) return [];
+
+  const totalDistM = pts[pts.length - 1].distanceM;
+  const numFullKm  = Math.floor(totalDistM / 1000);
+  const splits = [];
+
+  // Full km splits
+  for (let k = 0; k < numFullKm; k++) {
+    const targetStart = k * 1000;
+    const targetEnd   = (k + 1) * 1000;
+
+    // Find bracketing points
+    const iStart = pts.findIndex(p => p.distanceM >= targetStart);
+    let   iEnd   = pts.findIndex(p => p.distanceM >= targetEnd);
+    if (iEnd < 0) iEnd = pts.length - 1;
+    if (iStart < 0 || iStart >= iEnd) continue;
+
+    const segment = pts.slice(iStart, iEnd + 1);
+    const durationSec = segment[segment.length - 1].elapsedSec - segment[0].elapsedSec;
+    const distSeg     = segment[segment.length - 1].distanceM  - segment[0].distanceM;
+    const paceSecPKm  = distSeg > 0 ? (durationSec / distSeg) * 1000 : null;
+
+    const hrs = segment.map(p => p.heartRate).filter(v => v != null && v > 0);
+    const avgHR = hrs.length ? Math.round(hrs.reduce((a, b) => a + b, 0) / hrs.length) : null;
+
+    let elevGain = 0, elevLoss = 0;
+    for (let i = 1; i < segment.length; i++) {
+      const dElev = (segment[i].altitude ?? 0) - (segment[i-1].altitude ?? 0);
+      if (dElev > 0) elevGain += dElev;
+      else elevLoss += Math.abs(dElev);
+    }
+    const hasElev = segment.some(p => p.altitude != null);
+
+    splits.push({
+      km: k + 1,
+      label: `${k + 1}`,
+      durationSec,
+      paceSecPerKm: paceSecPKm,
+      avgHR,
+      elevGain: hasElev ? Math.round(elevGain) : null,
+      elevLoss: hasElev ? Math.round(elevLoss) : null,
+    });
+  }
+
+  // Partial last km
+  const remainM = totalDistM - numFullKm * 1000;
+  if (remainM > 50) {
+    const iStart = pts.findIndex(p => p.distanceM >= numFullKm * 1000);
+    if (iStart >= 0) {
+      const segment = pts.slice(iStart);
+      const durationSec = segment[segment.length - 1].elapsedSec - segment[0].elapsedSec;
+      const distSeg     = segment[segment.length - 1].distanceM  - segment[0].distanceM;
+      const paceSecPKm  = distSeg > 0 ? (durationSec / distSeg) * 1000 : null;
+      const hrs = segment.map(p => p.heartRate).filter(v => v != null && v > 0);
+      const avgHR = hrs.length ? Math.round(hrs.reduce((a, b) => a + b, 0) / hrs.length) : null;
+      let elevGain = 0;
+      for (let i = 1; i < segment.length; i++) {
+        const dElev = (segment[i].altitude ?? 0) - (segment[i-1].altitude ?? 0);
+        if (dElev > 0) elevGain += dElev;
+      }
+      const hasElev = segment.some(p => p.altitude != null);
+      splits.push({
+        km: numFullKm + 1,
+        label: `${(remainM / 1000).toFixed(1)}`,
+        partial: true,
+        durationSec,
+        paceSecPerKm: paceSecPKm,
+        avgHR,
+        elevGain: hasElev ? Math.round(elevGain) : null,
+        elevLoss: null,
+      });
+    }
+  }
+
+  return splits;
+}
+
+/** Formata seg/km como "m:ss" */
+function fmtPace(secPerKm) {
+  if (!secPerKm || secPerKm <= 0 || secPerKm > 3600) return '—';
+  const m = Math.floor(secPerKm / 60);
+  const s = Math.floor(secPerKm % 60);
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+let _splitsActiveIdx = 0;
+
+function renderSplits() {
+  const panel = document.getElementById('splitsPanel');
+  const tabs  = document.getElementById('splitsActivityTabs');
+  const content = document.getElementById('splitsContent');
+  if (!panel || !tabs || !content) return;
+
+  // Only activities that have distance data
+  const eligible = state.activities.filter(a =>
+    a.points && a.points.some(p => p.distanceM != null && p.distanceM > 100)
+  );
+
+  if (!eligible.length) { panel.classList.add('hidden'); return; }
+  panel.classList.remove('hidden');
+
+  // Clamp active index
+  if (_splitsActiveIdx >= eligible.length) _splitsActiveIdx = 0;
+
+  // Build activity selector tabs
+  if (eligible.length > 1) {
+    tabs.innerHTML = eligible.map((act, i) => `
+      <button class="split-activity-btn${i === _splitsActiveIdx ? ' active' : ''}"
+        style="--act-color:${act.color}"
+        onclick="_splitsActiveIdx=${i};renderSplits();">
+        <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${act.color};margin-right:.3rem;vertical-align:middle;"></span>
+        ${act.filename.replace(/\.(tcx|gpx)$/i, '').slice(0, 18)}
+      </button>`).join('');
+  } else {
+    tabs.innerHTML = '';
+  }
+
+  const act    = eligible[_splitsActiveIdx];
+  const splits = computeSplits(act);
+
+  if (!splits.length) {
+    content.innerHTML = '<div style="font-family:var(--font-m);font-size:.8rem;color:var(--muted);padding:.5rem 0;">Dados insuficientes para calcular splits.</div>';
+    return;
+  }
+
+  const hasPace = splits.some(s => s.paceSecPerKm != null);
+  const hasHR   = splits.some(s => s.avgHR != null);
+  const hasElev = splits.some(s => s.elevGain != null);
+
+  // Max pace for bar scaling (exclude outliers > 20min/km)
+  const validPaces = splits.filter(s => s.paceSecPerKm && s.paceSecPerKm < 1200).map(s => s.paceSecPerKm);
+  const maxPace    = validPaces.length ? Math.max(...validPaces) : 600;
+  const minPace    = validPaces.length ? Math.min(...validPaces) : 300;
+  const paceRange  = maxPace - minPace || 1;
+
+  const color = act.color;
+
+  let html = `<table class="splits-table">
+    <thead>
+      <tr>
+        <th>KM</th>
+        <th class="col-pace">Pace</th>
+        <th>Tempo</th>
+        ${hasElev ? '<th>Elev</th>' : ''}
+        ${hasHR   ? '<th>FC</th>'   : ''}
+      </tr>
+    </thead>
+    <tbody>`;
+
+  splits.forEach(s => {
+    const barW = s.paceSecPerKm && s.paceSecPerKm < 1200
+      ? Math.round(((s.paceSecPerKm - minPace) / paceRange) * 100)
+      : 100;
+    // Clamp bar between 8% and 100%
+    const barPct = Math.min(100, Math.max(8, barW));
+
+    const elevTxt = s.elevGain != null
+      ? `<span class="split-val-num">${s.elevGain > 0 ? '+' : ''}${s.elevGain}</span><span class="split-val-muted"> m</span>`
+      : '<span class="split-val-muted">—</span>';
+
+    const hrTxt = s.avgHR
+      ? `<span class="split-val-num">${s.avgHR}</span>`
+      : '<span class="split-val-muted">—</span>';
+
+    html += `<tr>
+      <td>${s.label}${s.partial ? '<span style="opacity:.4;font-size:.65rem;"> km</span>' : ''}</td>
+      <td>
+        <div class="split-pace-bar-wrap">
+          <span class="split-pace-val" style="color:${color}">${fmtPace(s.paceSecPerKm)}</span>
+          <div class="split-bar-track">
+            <div class="split-bar-fill" style="background:${color};width:0;" data-target="${barPct}%"></div>
+          </div>
+        </div>
+      </td>
+      <td><span class="split-val-num">${secondsToHMS(s.durationSec)}</span></td>
+      ${hasElev ? `<td>${elevTxt}</td>` : ''}
+      ${hasHR   ? `<td>${hrTxt}</td>`   : ''}
+    </tr>`;
+  });
+
+  html += '</tbody></table>';
+  content.innerHTML = html;
+
+  // Animate bars
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      content.querySelectorAll('.split-bar-fill').forEach(bar => {
+        bar.style.width = bar.dataset.target;
+      });
+    });
+  });
+}
+
 function renderDashboard() {
   const isSingle = state.activities.length === 1;
 
@@ -695,6 +898,7 @@ function renderDashboard() {
   renderSummaryCards();
   if (!isSingle) renderCompTable();
   renderZones();
+  renderSplits();
   buildMetricButtons();
   buildChart();
   buildMap();
@@ -711,21 +915,24 @@ function renderDashboard() {
 const MAP_LAYERS = {
   streets: {
     label: 'Mapa',
-    url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-    attr: '© OpenStreetMap © CARTO',
-    maxZoom: 19,
+    url: 'https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
+    attr: '© Google Maps',
+    subdomains: '0123',
+    maxZoom: 21,
   },
   satellite: {
     label: 'Satélite',
-    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    attr: '© Esri, Maxar, Earthstar Geographics',
-    maxZoom: 19,
+    url: 'https://mt{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
+    attr: '© Google Maps',
+    subdomains: '0123',
+    maxZoom: 21,
   },
   terrain: {
     label: 'Relevo',
-    url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
-    attr: '© OpenStreetMap © OpenTopoMap',
-    maxZoom: 17,
+    url: 'https://mt{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}',
+    attr: '© Google Maps',
+    subdomains: '0123',
+    maxZoom: 21,
   },
 };
 
@@ -738,8 +945,9 @@ function setMapLayer(layerKey) {
   if (_currentTileLayer) map.removeLayer(_currentTileLayer);
   _currentTileLayer = L.tileLayer(cfg.url, {
     attribution: cfg.attr,
-    subdomains: 'abcd',
+    subdomains: cfg.subdomains || 'abcd',
     maxZoom: cfg.maxZoom,
+    crossOrigin: true,
   }).addTo(map);
   // Move tile layer to back so route polylines stay on top
   _currentTileLayer.bringToBack();
@@ -969,7 +1177,7 @@ function tlTick(ts) {
   const scrubEl = document.getElementById('timelineScrubber');
   if (!scrubEl) { tlStop(); return; }
 
-  const step   = (wall * tl.speed / tl.maxSec) * 1000;
+  const step   = wall * tl.speed;
   const newVal = Math.min(+scrubEl.value + step, 1000);
   tlUpdate(newVal);
 
@@ -997,7 +1205,9 @@ function initTimeline(scrubData) {
   ));
   if (maxSec <= 0) return;
 
-  state.timeline = { scrubData, maxSec, isPlaying: false, speed: 1, raf: null, lastTS: null };
+  // 1× percorre o scrubber em ~30s reais | 2×=15s | 5×=6s
+  const baseSpeed = 1000 / 30;
+  state.timeline = { scrubData, maxSec, isPlaying: false, speed: baseSpeed, baseSpeed, raf: null, lastTS: null };
 
   const labelEnd = document.getElementById('timelineLabelEnd');
   const statsEl  = document.getElementById('timelineStats');
@@ -1434,7 +1644,7 @@ function initApp() {
     if (chip) {
       document.querySelectorAll('.speed-chip').forEach(c => c.classList.remove('active'));
       chip.classList.add('active');
-      if (state.timeline) state.timeline.speed = +chip.dataset.speed;
+      if (state.timeline) state.timeline.speed = state.timeline.baseSpeed * +chip.dataset.speed;
       return;
     }
     // Map layer switcher
