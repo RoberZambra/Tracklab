@@ -736,7 +736,7 @@ function buildMap() {
     return;
   }
 
-  mapEl.style.height = '340px';
+  mapEl.style.height = '400px';
 
   const map = L.map(mapEl, {
     zoomControl: true,
@@ -826,34 +826,16 @@ function buildMap() {
   setTimeout(() => map.invalidateSize(), 100);
   state.leafletMap = map;
 
-  // ── TIMELINE SCRUBBER ──────────────────────────────────
-  const scrubber  = document.getElementById('timelineScrubber');
-  const trackFill = document.getElementById('timelineTrackFill');
-  const labelEl   = document.getElementById('timelineLabel');
-  const labelEnd  = document.getElementById('timelineLabelEnd');
-  const statsEl   = document.getElementById('timelineStats');
-  const playBtn   = document.getElementById('timelinePlayBtn');
-  const playIcon  = document.getElementById('playIcon');
-  const pauseIcon = document.getElementById('pauseIcon');
-  if (!scrubber || !scrubData.length) return;
+  // Pass scrubData to the timeline controller
+  initTimeline(scrubData);
+}
 
-  // Longest activity duration = timeline length
-  const maxSec = Math.max(...scrubData.map(d =>
-    d.gpsPoints.length ? d.gpsPoints[d.gpsPoints.length - 1].elapsedSec : 0
-  ));
-  if (maxSec <= 0) return;
+// ── TIMELINE CONTROLLER (singleton — lives outside buildMap) ──────────────
+// State lives on the `state` object so re-builds don't stack listeners.
+(function initTimelineController() {
+  // These listeners are registered once, at app startup.
+  // They read from state.timeline which buildMap refreshes on each load.
 
-  labelEnd.textContent = secondsToHMS(maxSec);
-
-  // Stats chips
-  if (statsEl) statsEl.innerHTML = scrubData.map(d => `
-    <div class="timeline-stat-chip" id="scrub-chip-${d.act.id}">
-      <div class="timeline-stat-dot" style="background:${d.act.color};"></div>
-      <span style="font-family:var(--font-m);font-size:.72rem;color:var(--muted);max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${d.act.filename.replace(/\.(tcx|gpx)$/i,'')}</span>
-      <div class="timeline-stat-vals" id="scrub-vals-${d.act.id}" style="display:flex;gap:.5rem;flex-wrap:wrap;"><span style="opacity:.4;">—</span></div>
-    </div>`).join('');
-
-  // Binary search: last gpsPoint with elapsedSec <= sec
   function findPtIdx(pts, sec) {
     if (!pts.length) return 0;
     let lo = 0, hi = pts.length - 1;
@@ -865,7 +847,6 @@ function buildMap() {
     return lo;
   }
 
-  // Interpolate lat/lon between two points by time
   function interpLatLon(pts, sec) {
     if (!pts.length) return null;
     const i0 = findPtIdx(pts, sec);
@@ -876,18 +857,25 @@ function buildMap() {
     return [p0.lat + t * (p1.lat - p0.lat), p0.lon + t * (p1.lon - p0.lon)];
   }
 
-  // Core render: move markers + update stats for a given slider value (0–1000)
   function updateScrubber(value) {
+    const tl = state.timeline;
+    if (!tl) return;
+    const { scrubData, maxSec } = tl;
     const pct = value / 1000;
     const sec = pct * maxSec;
-    if (labelEl) labelEl.textContent = secondsToHMS(sec);
+
+    const scrubber  = document.getElementById('timelineScrubber');
+    const trackFill = document.getElementById('timelineTrackFill');
+    const labelEl   = document.getElementById('timelineLabel');
+    if (scrubber)  scrubber.value = value;
     if (trackFill) trackFill.style.width = (pct * 100) + '%';
+    if (labelEl)   labelEl.textContent = secondsToHMS(sec);
 
     scrubData.forEach(d => {
       const { gpsPoints, marker, act } = d;
       if (!gpsPoints.length) return;
       const actSec = Math.min(sec, gpsPoints[gpsPoints.length - 1].elapsedSec);
-      const pos    = interpLatLon(gpsPoints, actSec);
+      const pos = interpLatLon(gpsPoints, actSec);
       if (pos) marker.setLatLng(pos);
 
       const idx    = findPtIdx(gpsPoints, actSec);
@@ -895,93 +883,130 @@ function buildMap() {
       const valsEl = document.getElementById(`scrub-vals-${act.id}`);
       if (!valsEl || !pt) return;
       const parts = [];
-      if (pt.distanceM != null)      parts.push(`<span style="color:${act.color};font-weight:600;">${(pt.distanceM/1000).toFixed(2)}<span style="opacity:.5;font-size:.65rem;"> km</span></span>`);
-      if (pt.heartRate)              parts.push(`<span>♥ ${pt.heartRate}<span style="opacity:.5;font-size:.65rem;"> bpm</span></span>`);
+      if (pt.distanceM != null)           parts.push(`<span style="color:${act.color};font-weight:600;">${(pt.distanceM/1000).toFixed(2)}<span style="opacity:.5;font-size:.65rem;"> km</span></span>`);
+      if (pt.heartRate)                   parts.push(`<span>♥ ${pt.heartRate}<span style="opacity:.5;font-size:.65rem;"> bpm</span></span>`);
       if (pt.speed != null && pt.speed > 0.3) parts.push(`<span>⚡ ${pt.speed.toFixed(1)}<span style="opacity:.5;font-size:.65rem;"> km/h</span></span>`);
-      if (pt.altitude != null)       parts.push(`<span>⛰ ${Math.round(pt.altitude)}<span style="opacity:.5;font-size:.65rem;"> m</span></span>`);
+      if (pt.altitude != null)            parts.push(`<span>⛰ ${Math.round(pt.altitude)}<span style="opacity:.5;font-size:.65rem;"> m</span></span>`);
       valsEl.innerHTML = parts.join('') || '<span style="opacity:.4;">—</span>';
     });
   }
 
-  updateScrubber(0);
-  scrubber.addEventListener('input', e => {
-    stopPlayback();
-    updateScrubber(+e.target.value);
-  });
-
-  // ── PLAY / PAUSE ───────────────────────────────────────
-  let playRAF   = null;   // requestAnimationFrame handle
-  let isPlaying = false;
-  let speed     = 1;      // current multiplier (realtime seconds per wall second)
-  let lastTS    = null;   // last animation timestamp
-
   function setPlayUI(playing) {
-    isPlaying = playing;
-    if (playIcon)  playIcon.style.display  = playing ? 'none'  : '';
-    if (pauseIcon) pauseIcon.style.display = playing ? ''      : 'none';
+    state.timeline.isPlaying = playing;
+    const playIcon  = document.getElementById('playIcon');
+    const pauseIcon = document.getElementById('pauseIcon');
+    const playBtn   = document.getElementById('timelinePlayBtn');
+    if (playIcon)  playIcon.style.display  = playing ? 'none' : '';
+    if (pauseIcon) pauseIcon.style.display = playing ? ''     : 'none';
     if (playBtn)   playBtn.classList.toggle('playing', playing);
   }
 
   function stopPlayback() {
-    if (playRAF) { cancelAnimationFrame(playRAF); playRAF = null; }
-    lastTS = null;
+    const tl = state.timeline;
+    if (!tl) return;
+    if (tl.raf) { cancelAnimationFrame(tl.raf); tl.raf = null; }
+    tl.lastTS = null;
     setPlayUI(false);
   }
 
   function animationTick(ts) {
-    if (lastTS === null) { lastTS = ts; }
-    const wallDelta = (ts - lastTS) / 1000;   // wall-clock seconds elapsed
-    lastTS = ts;
+    const tl = state.timeline;
+    if (!tl || !tl.isPlaying) return;
+    if (tl.lastTS === null) tl.lastTS = ts;
 
-    const simDelta  = wallDelta * speed;       // simulated seconds to advance
-    const stepVal   = (simDelta / maxSec) * 1000; // slider units to advance
-    const newVal    = Math.min(+scrubber.value + stepVal, 1000);
+    const wallDelta = (ts - tl.lastTS) / 1000;
+    tl.lastTS = ts;
 
-    scrubber.value = newVal;
+    const scrubber = document.getElementById('timelineScrubber');
+    if (!scrubber) { stopPlayback(); return; }
+
+    const simDelta = wallDelta * tl.speed;
+    const stepVal  = (simDelta / tl.maxSec) * 1000;
+    const newVal   = Math.min(+scrubber.value + stepVal, 1000);
+
     updateScrubber(newVal);
 
-    if (newVal >= 1000) {
-      stopPlayback();
-      return;
-    }
-    playRAF = requestAnimationFrame(animationTick);
+    if (newVal >= 1000) { stopPlayback(); return; }
+    tl.raf = requestAnimationFrame(animationTick);
   }
 
   function togglePlay() {
-    if (isPlaying) {
-      stopPlayback();
-      return;
-    }
-    // If at end, restart
-    if (+scrubber.value >= 999) {
-      scrubber.value = 0;
+    const tl = state.timeline;
+    if (!tl) return;
+    if (tl.isPlaying) { stopPlayback(); return; }
+    const scrubber = document.getElementById('timelineScrubber');
+    if (scrubber && +scrubber.value >= 999) {
       updateScrubber(0);
     }
     setPlayUI(true);
-    lastTS  = null;
-    playRAF = requestAnimationFrame(animationTick);
+    tl.lastTS = null;
+    tl.raf = requestAnimationFrame(animationTick);
   }
 
-  if (playBtn) playBtn.addEventListener('click', togglePlay);
-
-  // ── SPEED CHIPS ────────────────────────────────────────
-  document.querySelectorAll('.speed-chip').forEach(chip => {
-    chip.addEventListener('click', () => {
+  // Single delegation listener on mapSection (permanent DOM element)
+  document.addEventListener('click', e => {
+    if (e.target.closest('#timelinePlayBtn')) { togglePlay(); return; }
+    if (e.target.closest('.speed-chip')) {
+      const chip = e.target.closest('.speed-chip');
       document.querySelectorAll('.speed-chip').forEach(c => c.classList.remove('active'));
       chip.classList.add('active');
-      speed = +chip.dataset.speed;
-    });
+      if (state.timeline) state.timeline.speed = +chip.dataset.speed;
+    }
   });
 
-  // Stop playback if map section is hidden (e.g. user switches tab)
-  const mapObs = new MutationObserver(() => {
-    const mapSection = document.getElementById('mapSection');
-    if (mapSection && mapSection.classList.contains('hidden')) stopPlayback();
+  document.addEventListener('input', e => {
+    if (e.target.id === 'timelineScrubber') {
+      stopPlayback();
+      updateScrubber(+e.target.value);
+    }
   });
-  const mapSection2 = document.getElementById('mapSection');
-  if (mapSection2) mapObs.observe(mapSection2, { attributes: true, attributeFilter: ['class'] });
+
+  // Expose updateScrubber so initTimeline can call it
+  state._updateScrubber = updateScrubber;
+  state._stopPlayback   = stopPlayback;
+})();
+
+/** Called by buildMap to refresh timeline state after new activities load */
+function initTimeline(scrubData) {
+  // Stop any ongoing playback from previous session
+  if (state._stopPlayback) state._stopPlayback();
+
+  const scrubber  = document.getElementById('timelineScrubber');
+  const labelEnd  = document.getElementById('timelineLabelEnd');
+  const statsEl   = document.getElementById('timelineStats');
+  if (!scrubber || !scrubData.length) return;
+
+  const maxSec = Math.max(...scrubData.map(d =>
+    d.gpsPoints.length ? d.gpsPoints[d.gpsPoints.length - 1].elapsedSec : 0
+  ));
+  if (maxSec <= 0) return;
+
+  // Reset slider
+  scrubber.value = 0;
+  const trackFill = document.getElementById('timelineTrackFill');
+  if (trackFill) trackFill.style.width = '0%';
+
+  if (labelEnd) labelEnd.textContent = secondsToHMS(maxSec);
+
+  // Reset speed chips to 1×
+  document.querySelectorAll('.speed-chip').forEach(c => {
+    c.classList.toggle('active', c.dataset.speed === '1');
+  });
+
+  // Build stats chips
+  if (statsEl) statsEl.innerHTML = scrubData.map(d => `
+    <div class="timeline-stat-chip" id="scrub-chip-${d.act.id}">
+      <div class="timeline-stat-dot" style="background:${d.act.color};"></div>
+      <span style="font-family:var(--font-m);font-size:.72rem;color:var(--muted);max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${d.act.filename.replace(/\.(tcx|gpx)$/i,'')}</span>
+      <div class="timeline-stat-vals" id="scrub-vals-${d.act.id}" style="display:flex;gap:.5rem;flex-wrap:wrap;"><span style="opacity:.4;">—</span></div>
+    </div>`).join('');
+
+  // Store fresh timeline state
+  state.timeline = { scrubData, maxSec, isPlaying: false, speed: 1, raf: null, lastTS: null };
+
+  // Render at position 0
+  if (state._updateScrubber) state._updateScrubber(0);
 }
-
 
 /** Cartões de resumo com ícones, cores e valores por atividade */
 function renderSummaryCards() {

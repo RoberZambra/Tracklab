@@ -162,10 +162,10 @@
     /* MAP */
     #mapSection{background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--rl);overflow:hidden;margin-bottom:1rem;box-shadow:var(--shadow);}
     #mapSection .map-header{padding:.82rem 1.2rem;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border2);}
-    #routeMap{height:340px;width:100%;background:#e8edf5;}
+    #routeMap{height:400px;width:100%;background:#e8edf5;}
     /* Scrubber thumb */
-    #timelineScrubber::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--brand);border:2px solid #fff;box-shadow:0 1px 6px rgba(0,71,255,0.35);cursor:pointer;position:relative;z-index:1;}
-    #timelineScrubber::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--brand);border:2px solid #fff;box-shadow:0 1px 6px rgba(0,71,255,0.35);cursor:pointer;}
+    #timelineScrubber::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--brand);border:3px solid #fff;box-shadow:0 1px 8px rgba(0,71,255,0.4);cursor:pointer;position:relative;z-index:1;}
+    #timelineScrubber::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--brand);border:3px solid #fff;box-shadow:0 1px 8px rgba(0,71,255,0.4);cursor:pointer;}
     #timelineScrubber::-webkit-slider-runnable-track{background:transparent;}
     /* Stat chips in timeline */
     .timeline-stat-chip{display:flex;align-items:center;gap:.4rem;background:var(--bg3);border:1.5px solid var(--border);border-radius:6px;padding:.3rem .65rem;font-family:var(--font-m);font-size:.72rem;color:var(--text2);}
@@ -436,35 +436,33 @@
         </div>
         <div id="routeMap"></div>
         <!-- TIMELINE SCRUBBER -->
-        <div id="mapTimeline" style="padding:.7rem 1.2rem .65rem;border-top:1px solid var(--border2);">
-          <!-- Row 1: controls + scrubber + time -->
-          <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.5rem;">
-            <!-- Play/Pause -->
+        <div id="mapTimeline" style="padding:.8rem 1.2rem .8rem;border-top:1px solid var(--border2);">
+          <!-- Row 1: play button + speed chips + time display -->
+          <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.7rem;">
             <button id="timelinePlayBtn" title="Play / Pause"
-              style="flex-shrink:0;width:32px;height:32px;border-radius:50%;background:var(--brand);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,71,255,0.35);transition:transform .1s,background .15s;">
-              <svg id="playIcon" width="12" height="12" viewBox="0 0 24 24" fill="#fff"><polygon points="6,3 20,12 6,21"/></svg>
-              <svg id="pauseIcon" width="12" height="12" viewBox="0 0 24 24" fill="#fff" style="display:none;"><rect x="5" y="3" width="4" height="18"/><rect x="15" y="3" width="4" height="18"/></svg>
+              style="flex-shrink:0;width:40px;height:40px;border-radius:50%;background:var(--brand);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,71,255,0.4);transition:transform .1s,background .15s;">
+              <svg id="playIcon" width="14" height="14" viewBox="0 0 24 24" fill="#fff"><polygon points="7,3 21,12 7,21"/></svg>
+              <svg id="pauseIcon" width="14" height="14" viewBox="0 0 24 24" fill="#fff" style="display:none;"><rect x="5" y="3" width="5" height="18"/><rect x="14" y="3" width="5" height="18"/></svg>
             </button>
-            <!-- Speed chips -->
-            <div style="display:flex;gap:.25rem;flex-shrink:0;">
+            <div style="display:flex;gap:.3rem;flex-shrink:0;">
               <button class="speed-chip active" data-speed="1">1×</button>
               <button class="speed-chip" data-speed="2">2×</button>
               <button class="speed-chip" data-speed="5">5×</button>
               <button class="speed-chip" data-speed="10">10×</button>
             </div>
-            <!-- Slider -->
-            <div style="flex:1;position:relative;">
-              <input type="range" id="timelineScrubber" min="0" max="1000" value="0"
-                style="width:100%;height:6px;appearance:none;-webkit-appearance:none;background:var(--bg4);border-radius:3px;outline:none;cursor:pointer;accent-color:var(--brand);">
-              <div id="timelineTrackFill" style="position:absolute;top:50%;left:0;transform:translateY(-50%);height:6px;border-radius:3px;background:var(--brand);width:0%;pointer-events:none;"></div>
-            </div>
-            <!-- Time labels -->
-            <span style="font-family:var(--font-m);font-size:.72rem;color:var(--text2);white-space:nowrap;min-width:80px;text-align:right;">
-              <span id="timelineLabel">00:00</span><span style="opacity:.35;"> / </span><span id="timelineLabelEnd">—</span>
+            <div style="flex:1;"></div>
+            <span style="font-family:var(--font-m);font-size:.8rem;color:var(--text2);white-space:nowrap;">
+              <span id="timelineLabel">00:00</span><span style="opacity:.3;margin:0 .2rem;">/</span><span id="timelineLabelEnd" style="color:var(--muted);">—</span>
             </span>
           </div>
-          <!-- Row 2: per-activity stats -->
-          <div id="timelineStats" style="display:flex;flex-wrap:wrap;gap:.5rem;"></div>
+          <!-- Row 2: full-width scrubber -->
+          <div style="position:relative;padding:.35rem 0;">
+            <input type="range" id="timelineScrubber" min="0" max="1000" value="0"
+              style="width:100%;height:8px;appearance:none;-webkit-appearance:none;background:var(--bg4);border-radius:4px;outline:none;cursor:pointer;accent-color:var(--brand);display:block;">
+            <div id="timelineTrackFill" style="position:absolute;top:50%;left:0;transform:translateY(-50%);height:8px;border-radius:4px;background:var(--brand);width:0%;pointer-events:none;opacity:.7;"></div>
+          </div>
+          <!-- Row 3: per-activity stats -->
+          <div id="timelineStats" style="display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.55rem;"></div>
         </div>
         <div class="map-legend" id="mapLegend"></div>
       </div>
