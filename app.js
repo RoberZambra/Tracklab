@@ -788,17 +788,22 @@ function buildMap() {
     // Scrubber position marker — starts at beginning
     const scrubIcon = L.divIcon({
       className: '',
-      html: `<div id="scrub-dot-${act.id}" style="
-        width:16px;height:16px;border-radius:50%;
+      html: `<div style="
+        width:18px;height:18px;border-radius:50%;
         background:${color};border:3px solid #fff;
         box-shadow:0 0 0 3px ${color}55,0 2px 8px rgba(0,0,0,0.25);
-        transition:none;
       "></div>`,
-      iconSize: [16, 16], iconAnchor: [8, 8],
+      iconSize: [18, 18], iconAnchor: [9, 9],
     });
     const scrubMarker = L.marker(latlngs[0], { icon: scrubIcon, zIndexOffset: 1000 }).addTo(map);
 
-    scrubData.push({ act, latlngs, points: act.points || [], marker: scrubMarker });
+    // KEY FIX: build gpsPoints = only points that have lat, lon AND elapsedSec
+    // This keeps coords and time perfectly in sync
+    const gpsPoints = (act.points || []).filter(p =>
+      p.lat != null && p.lon != null && p.elapsedSec != null
+    );
+
+    scrubData.push({ act, gpsPoints, marker: scrubMarker });
   });
 
   // Legend
@@ -829,91 +834,92 @@ function buildMap() {
   const statsEl    = document.getElementById('timelineStats');
   if (!scrubber || !scrubData.length) return;
 
-  // Use the longest activity's duration as the timeline reference
-  const maxSec = Math.max(...scrubData.map(d => {
-    const pts = d.points.filter(p => p.elapsedSec != null);
-    return pts.length ? pts[pts.length - 1].elapsedSec : 0;
-  }));
-
+  // Use the longest activity duration as timeline reference
+  const maxSec = Math.max(...scrubData.map(d =>
+    d.gpsPoints.length ? d.gpsPoints[d.gpsPoints.length - 1].elapsedSec : 0
+  ));
   if (maxSec <= 0) return;
 
   labelEnd.textContent = secondsToHMS(maxSec);
 
-  // Build stats chips HTML once for structure
+  // Build stats chips
   statsEl.innerHTML = scrubData.map(d => `
     <div class="timeline-stat-chip" id="scrub-chip-${d.act.id}">
       <div class="timeline-stat-dot" style="background:${d.act.color};"></div>
-      <span style="font-family:var(--font-m);font-size:.66rem;color:var(--muted);max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${d.act.filename.replace(/\.(tcx|gpx)$/i,'')}</span>
-      <div class="timeline-stat-vals" id="scrub-vals-${d.act.id}">
-        <span>—</span>
-      </div>
+      <span style="font-family:var(--font-m);font-size:.72rem;color:var(--muted);max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${d.act.filename.replace(/\.(tcx|gpx)$/i,'')}</span>
+      <div class="timeline-stat-vals" id="scrub-vals-${d.act.id}" style="display:flex;gap:.5rem;flex-wrap:wrap;"><span style="opacity:.4;">—</span></div>
     </div>`).join('');
 
-  /** Given elapsedSec, find the nearest point index in a points array */
-  function nearestPointIdx(points, sec) {
-    if (!points.length) return 0;
-    let lo = 0, hi = points.length - 1;
+  /**
+   * Binary search: find index of last gpsPoint with elapsedSec <= sec
+   */
+  function findPtIdx(pts, sec) {
+    if (!pts.length) return 0;
+    let lo = 0, hi = pts.length - 1;
     while (lo < hi) {
-      const mid = (lo + hi) >> 1;
-      if (points[mid].elapsedSec < sec) lo = mid + 1;
-      else hi = mid;
+      const mid = (lo + hi + 1) >> 1;
+      if (pts[mid].elapsedSec <= sec) lo = mid;
+      else hi = mid - 1;
     }
     return lo;
   }
 
-  /** Given a 0-1 progress, find the interpolated latlng along coords */
-  function interpCoord(latlngs, pct) {
-    if (!latlngs.length) return null;
-    const rawIdx = pct * (latlngs.length - 1);
-    const i0 = Math.floor(rawIdx);
-    const i1 = Math.min(i0 + 1, latlngs.length - 1);
-    const t  = rawIdx - i0;
+  /**
+   * Linearly interpolate lat/lon between two gpsPoints by elapsedSec
+   */
+  function interpLatLon(pts, sec) {
+    if (!pts.length) return null;
+    const i0 = findPtIdx(pts, sec);
+    const p0 = pts[i0];
+    const p1 = pts[Math.min(i0 + 1, pts.length - 1)];
+    if (p0 === p1 || p1.elapsedSec === p0.elapsedSec) return [p0.lat, p0.lon];
+    const t = (sec - p0.elapsedSec) / (p1.elapsedSec - p0.elapsedSec);
     return [
-      latlngs[i0][0] + t * (latlngs[i1][0] - latlngs[i0][0]),
-      latlngs[i0][1] + t * (latlngs[i1][1] - latlngs[i0][1]),
+      p0.lat + t * (p1.lat - p0.lat),
+      p0.lon + t * (p1.lon - p0.lon),
     ];
   }
 
   function updateScrubber(value) {
-    const pct = value / 1000; // 0..1
+    const pct = value / 1000;
     const sec = pct * maxSec;
 
-    // Update label
     labelEl.textContent = '⏱ ' + secondsToHMS(sec);
-
-    // Update fill track
     if (trackFill) trackFill.style.width = (pct * 100) + '%';
 
     scrubData.forEach(d => {
-      // Move marker along coords proportional to its own duration
-      const actMaxSec = d.points.length
-        ? d.points[d.points.length - 1].elapsedSec || maxSec
-        : maxSec;
-      const actPct = Math.min(sec / actMaxSec, 1);
-      const pos = interpCoord(d.latlngs, actPct);
-      if (pos) d.marker.setLatLng(pos);
+      const { gpsPoints, marker, act } = d;
+      if (!gpsPoints.length) return;
 
-      // Get nearest data point for stats
-      const ptsWithSec = d.points.filter(p => p.elapsedSec != null);
-      const idx = nearestPointIdx(ptsWithSec, sec);
-      const pt  = ptsWithSec[idx];
+      // Clamp sec to this activity's own duration
+      const actMaxSec = gpsPoints[gpsPoints.length - 1].elapsedSec;
+      const actSec    = Math.min(sec, actMaxSec);
 
-      const valsEl = document.getElementById(`scrub-vals-${d.act.id}`);
+      // Move marker using time-accurate interpolation
+      const pos = interpLatLon(gpsPoints, actSec);
+      if (pos) marker.setLatLng(pos);
+
+      // Stats: nearest point
+      const idx = findPtIdx(gpsPoints, actSec);
+      const pt  = gpsPoints[idx];
+      const valsEl = document.getElementById(`scrub-vals-${act.id}`);
       if (!valsEl || !pt) return;
 
       const parts = [];
-      if (pt.distanceM != null) parts.push(`<span style="color:${d.act.color};font-weight:600;">${(pt.distanceM/1000).toFixed(2)}<span style="opacity:.5;font-size:.62rem;">km</span></span>`);
-      if (pt.heartRate)         parts.push(`<span>♥ ${pt.heartRate}<span style="opacity:.5;font-size:.62rem;">bpm</span></span>`);
-      if (pt.speed != null && pt.speed > 0) parts.push(`<span>⚡ ${pt.speed.toFixed(1)}<span style="opacity:.5;font-size:.62rem;">km/h</span></span>`);
-      if (pt.altitude != null)  parts.push(`<span>⛰ ${Math.round(pt.altitude)}<span style="opacity:.5;font-size:.62rem;">m</span></span>`);
+      if (pt.distanceM != null)
+        parts.push(`<span style="color:${act.color};font-weight:600;">${(pt.distanceM/1000).toFixed(2)}<span style="opacity:.5;font-size:.65rem;"> km</span></span>`);
+      if (pt.heartRate)
+        parts.push(`<span>♥ ${pt.heartRate}<span style="opacity:.5;font-size:.65rem;"> bpm</span></span>`);
+      if (pt.speed != null && pt.speed > 0.3)
+        parts.push(`<span>⚡ ${pt.speed.toFixed(1)}<span style="opacity:.5;font-size:.65rem;"> km/h</span></span>`);
+      if (pt.altitude != null)
+        parts.push(`<span>⛰ ${Math.round(pt.altitude)}<span style="opacity:.5;font-size:.65rem;"> m</span></span>`);
 
       valsEl.innerHTML = parts.join('') || '<span style="opacity:.4;">—</span>';
     });
   }
 
-  // Init at 0
   updateScrubber(0);
-
   scrubber.addEventListener('input', e => updateScrubber(+e.target.value));
 }
 
