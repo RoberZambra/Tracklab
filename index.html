@@ -454,8 +454,8 @@
           <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.7rem;">
             <button id="timelinePlayBtn" title="Play / Pause"
               style="flex-shrink:0;width:40px;height:40px;border-radius:50%;background:var(--brand);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,71,255,0.4);transition:transform .1s,background .15s;">
-              <svg id="playIcon" width="14" height="14" viewBox="0 0 24 24" fill="#fff"><polygon points="7,3 21,12 7,21"/></svg>
-              <svg id="pauseIcon" width="14" height="14" viewBox="0 0 24 24" fill="#fff" style="display:none;"><rect x="5" y="3" width="5" height="18"/><rect x="14" y="3" width="5" height="18"/></svg>
+              <svg id="playIcon" width="14" height="14" viewBox="0 0 24 24" fill="#fff" style="pointer-events:none"><polygon points="7,3 21,12 7,21"/></svg>
+              <svg id="pauseIcon" width="14" height="14" viewBox="0 0 24 24" fill="#fff" style="display:none;pointer-events:none"><rect x="5" y="3" width="5" height="18"/><rect x="14" y="3" width="5" height="18"/></svg>
             </button>
             <div style="display:flex;gap:.3rem;flex-shrink:0;">
               <button class="speed-chip active" data-speed="1">1×</button>
@@ -597,7 +597,7 @@ let currentUser=null,historyFilter='all';
 function getUsers(){try{return JSON.parse(localStorage.getItem(USERS_KEY)||'[]');}catch{return[];}}
 function saveUsers(u){localStorage.setItem(USERS_KEY,JSON.stringify(u));}
 function getHistory(){if(!currentUser)return[];const all=JSON.parse(localStorage.getItem(HIST_KEY)||'{}');return all[currentUser.email]||[];}
-function saveHistory(h){if(!currentUser)return;const all=JSON.parse(localStorage.getItem(HIST_KEY)||'{}');all[currentUser.email]=h;localStorage.setItem(HIST_KEY,JSON.stringify(all));}
+function saveHistory(h){if(!currentUser)return;try{const all=JSON.parse(localStorage.getItem(HIST_KEY)||'{}');all[currentUser.email]=h;localStorage.setItem(HIST_KEY,JSON.stringify(all));}catch(e){console.warn('saveHistory quota exceeded',e);}}
 function switchToRegister(){document.getElementById('loginMode').style.display='none';document.getElementById('registerMode').style.display='';}
 function switchToLogin(){document.getElementById('registerMode').style.display='none';document.getElementById('loginMode').style.display='';}
 function showLoginError(m){const e=document.getElementById('loginError');e.textContent=m;e.classList.add('visible');}
@@ -618,7 +618,36 @@ function fmtDate(iso){const d=new Date(iso);return d.toLocaleDateString('pt-BR',
 function fmtTime(iso){const d=new Date(iso);return d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});}
 function relativeDate(iso){const diff=(Date.now()-new Date(iso))/1000;if(diff<60)return'agora';if(diff<3600)return`${Math.floor(diff/60)}min atrás`;if(diff<86400)return`${Math.floor(diff/3600)}h atrás`;if(diff<604800)return`${Math.floor(diff/86400)}d atrás`;return fmtDate(iso);}
 function sToHMS(s){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=Math.floor(s%60);if(h>0)return`${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;return`${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;}
-function addToHistory(activities){if(!currentUser||!activities.length)return;const hist=getHistory();hist.unshift({id:Date.now().toString(36),date:new Date().toISOString(),activities:activities.map(a=>({id:a.id,filename:a.filename,label:a.label,sport:detectSport(a.label+' '+a.filename),startTime:a.startTime,summary:a.summary,color:a.color,coords:a.coords||[],points:a.points||[]}))});saveHistory(hist);}
+function addToHistory(activities){
+  if(!currentUser||!activities.length)return;
+  const hist=getHistory();
+  // Downsample points to max 300 per activity to stay within localStorage quota
+  function slim(pts){
+    if(!pts||!pts.length)return[];
+    const step=Math.max(1,Math.floor(pts.length/300));
+    return pts.filter((_,i)=>i%step===0||i===pts.length-1);
+  }
+  hist.unshift({
+    id:Date.now().toString(36),
+    date:new Date().toISOString(),
+    activities:activities.map(a=>({
+      id:a.id,filename:a.filename,label:a.label,
+      sport:detectSport(a.label+' '+a.filename),
+      startTime:a.startTime,summary:a.summary,color:a.color,
+      coords:a.coords||[],
+      points:slim(a.points)
+    }))
+  });
+  // Keep only last 20 sessions to avoid quota issues
+  const trimmed=hist.slice(0,20);
+  try{
+    saveHistory(trimmed);
+  }catch(e){
+    // If still over quota, save without points
+    const light=trimmed.map(s=>({...s,activities:s.activities.map(a=>({...a,points:[],coords:a.coords&&a.coords.length>300?a.coords.filter((_,i)=>i%Math.floor(a.coords.length/300)===0):a.coords||[]}))}));
+    try{saveHistory(light);}catch(e2){console.warn('Histórico: localStorage cheio',e2);}
+  }
+}
 function setFilter(btn,filter){historyFilter=filter;document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));btn.classList.add('active');renderHistory();}
 function renderHistory(){
   const hist=getHistory(),search=(document.getElementById('historySearch')?.value||'').toLowerCase(),now=Date.now(),sevenD=7*24*3600*1000;

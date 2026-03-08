@@ -1422,30 +1422,35 @@ if ('serviceWorker' in navigator) {
 function initApp() {
   initDropZone();
 
-  // ── Timeline listeners — registered ONCE here, never inside buildMap ──
-  document.getElementById('timelinePlayBtn').addEventListener('click', tlTogglePlay);
-
+  // ── Timeline + speed: event delegation on document (registered once) ──
   document.addEventListener('click', e => {
+    // Play/pause — match button or any child inside it
+    if (e.target.closest('#timelinePlayBtn')) {
+      tlTogglePlay();
+      return;
+    }
+    // Speed chips
     const chip = e.target.closest('.speed-chip');
-    if (!chip) return;
-    document.querySelectorAll('.speed-chip').forEach(c => c.classList.remove('active'));
-    chip.classList.add('active');
-    if (state.timeline) state.timeline.speed = +chip.dataset.speed;
+    if (chip) {
+      document.querySelectorAll('.speed-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      if (state.timeline) state.timeline.speed = +chip.dataset.speed;
+      return;
+    }
+    // Map layer switcher
+    const layerBtn = e.target.closest('.map-layer-btn:not(#map3dBtn)');
+    if (layerBtn && state.leafletMap) {
+      document.querySelectorAll('.map-layer-btn:not(#map3dBtn)').forEach(b => b.classList.remove('active'));
+      layerBtn.classList.add('active');
+      setMapLayer(layerBtn.dataset.layer);
+    }
   });
 
-  document.getElementById('timelineScrubber').addEventListener('input', e => {
-    tlStop();
-    tlUpdate(+e.target.value);
-  });
-
-  // Map layer switcher
-  document.addEventListener('click', e => {
-    const btn = e.target.closest('.map-layer-btn');
-    if (!btn || !state.leafletMap) return;
-    const layer = btn.dataset.layer;
-    document.querySelectorAll('.map-layer-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    setMapLayer(layer);
+  document.addEventListener('input', e => {
+    if (e.target.id === 'timelineScrubber') {
+      tlStop();
+      tlUpdate(+e.target.value);
+    }
   });
 
   // Botão comparar
