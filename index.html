@@ -81,7 +81,6 @@
       .header-inner{padding:.55rem .75rem;}
       .brand-sub{display:none;}
       .user-name-display{display:none;}
-      #clearBtn{display:none!important;}
     }
 
     /* UPLOAD */
@@ -117,9 +116,7 @@
     .zone-hd-title svg{width:16px;height:16px;flex-shrink:0;}
     .zone-hd-title .zone-icon{font-size:1rem;line-height:1;}
     .zone-hd-sub{font-family:var(--font-b);font-size:.85rem;color:var(--muted);margin-top:.3rem;}
-    .zone-tabs{display:flex;gap:.22rem;padding:.6rem 1.25rem .3rem;}
-    .zone-tab{padding:.22rem .65rem;border-radius:4px;font-family:var(--font-d);font-size:.85rem;font-weight:600;letter-spacing:.03em;text-transform:uppercase;background:none;border:1.5px solid transparent;color:var(--muted);cursor:pointer;transition:all .15s;}
-    .zone-tab.active{color:var(--text);background:var(--bg3);border-color:var(--border);}
+    .zone-tabs{display:flex;flex-wrap:wrap;gap:.55rem;padding:.5rem 1.25rem .2rem;}
     .zone-rows{padding:.5rem 1.25rem 1.1rem;display:flex;flex-direction:column;gap:.45rem;}
     .zone-row{display:grid;grid-template-columns:28px 1fr 80px;align-items:center;gap:.55rem;}
     .zone-lbl{font-family:var(--font-d);font-size:1.12rem;font-weight:800;color:var(--muted);letter-spacing:.03em;}
@@ -329,6 +326,7 @@
   <nav class="mobile-nav">
     <button class="nav-tab active" id="tabUploadMob" onclick="switchTab('upload')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>Carregar</button>
     <button class="nav-tab" id="tabHistoryMob" onclick="switchTab('history')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Histórico</button>
+    <button id="clearBtnMob" class="hidden" style="margin-left:auto;font-family:var(--font-m);font-size:.85rem;color:var(--muted);border:1.5px solid var(--border);background:none;border-radius:var(--r);padding:.3rem .7rem;cursor:pointer;transition:all .15s;" onclick="document.getElementById('clearBtn').click()">✕ Limpar</button>
   </nav>
 </header>
 

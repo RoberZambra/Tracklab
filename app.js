@@ -560,34 +560,40 @@ function computePaceZones(activity, avgSecPerKm) {
 }
 
 /**
- * Render zone bar rows for one activity into a container element.
- * zones = array of { label, range, color }
- * pcts  = array of numbers (0–100), matching zones order
+ * Render zone bar rows showing ALL activities side-by-side for comparison.
+ * zones  = array of { label, range }
+ * allPcts = array of arrays — one per activity: [[pct,...], [pct,...]]
+ * colors  = array of activity colors
  */
-function renderZoneRows(containerId, zones, pcts) {
+function renderZoneRows(containerId, zones, allPcts, colors) {
   const el = document.getElementById(containerId);
   if (!el) return;
 
+  const single = allPcts.length === 1;
+
   el.innerHTML = zones.map((z, i) => {
-    const pct = pcts[i];
-    const outside = pct < 18; // pct label outside bar when too narrow
-    return `
-    <div class="zone-row">
-      <span class="zone-lbl">${z.label}</span>
-      <div class="zone-bar-wrap">
-        <div class="zone-bar-track">
+    const bars = allPcts.map((pcts, ai) => {
+      const pct = pcts[i];
+      const outside = pct < 14;
+      const color = colors[ai];
+      return `
+        <div class="zone-bar-track" style="margin-bottom:${single ? 0 : '3px'};">
           <div class="zone-bar-fill${outside ? ' pct-outside' : ''}"
-               style="background:${z.color};width:0;"
+               style="background:${color};width:0;"
                data-target="${pct}"
                data-pct="${pct}%">
           </div>
-        </div>
-      </div>
+        </div>`;
+    }).join('');
+
+    return `
+    <div class="zone-row">
+      <span class="zone-lbl" style="color:${z.color||'var(--muted)'};">${z.label}</span>
+      <div class="zone-bar-wrap">${bars}</div>
       <span class="zone-range">${z.range}</span>
     </div>`;
   }).join('');
 
-  // Animate bars after paint
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       el.querySelectorAll('.zone-bar-fill').forEach(bar => {
@@ -598,30 +604,19 @@ function renderZoneRows(containerId, zones, pcts) {
 }
 
 /**
- * Build activity switcher tabs for a zone panel.
- * Returns the currently selected index.
+ * Build activity legend (replaces tabs) for a zone panel.
  */
-function buildZoneTabs(tabsId, rowsId, subId, activities, buildFn) {
+function buildZoneLegend(tabsId, activities) {
   const tabs = document.getElementById(tabsId);
   if (!tabs) return;
   tabs.innerHTML = '';
-  if (activities.length <= 1) return; // no tabs needed for single activity
+  if (activities.length <= 1) return;
 
-  activities.forEach((act, i) => {
-    const btn = document.createElement('button');
-    btn.className = 'zone-tab' + (i === 0 ? ' active' : '');
-    btn.style.cssText = i === 0 ? `color:${act.color};border-color:${act.color}33;background:${act.color}10;` : '';
-    btn.textContent = act.filename.replace(/\.(tcx|gpx)$/i, '').slice(0, 16);
-    btn.addEventListener('click', () => {
-      tabs.querySelectorAll('.zone-tab').forEach(b => {
-        b.classList.remove('active');
-        b.style.cssText = '';
-      });
-      btn.classList.add('active');
-      btn.style.cssText = `color:${act.color};border-color:${act.color}33;background:${act.color}10;`;
-      buildFn(i);
-    });
-    tabs.appendChild(btn);
+  activities.forEach(act => {
+    const item = document.createElement('div');
+    item.style.cssText = `display:inline-flex;align-items:center;gap:.3rem;font-family:var(--font-m);font-size:.75rem;color:var(--muted);`;
+    item.innerHTML = `<span style="width:10px;height:10px;border-radius:2px;background:${act.color};flex-shrink:0;display:inline-block;"></span>${act.filename.replace(/\.(tcx|gpx)$/i,'').slice(0,18)}`;
+    tabs.appendChild(item);
   });
 }
 
@@ -633,52 +628,45 @@ function renderZones() {
   const activitiesWithHR    = state.activities.filter(a => a.summary?.maxHR > 0 && a.points.some(p => p.heartRate > 0));
   const activitiesWithSpeed = state.activities.filter(a => a.summary?.avgSpeed > 0 && a.points.some(p => p.speed > 0));
 
-  // ── HR ZONES ──
-  const hrPanel = document.getElementById('hrZonePanel');
+  // ── HR ZONES ── show all activities at once
   if (activitiesWithHR.length === 0) {
     document.getElementById('hrZoneRows').innerHTML = '<div class="zone-empty">Dados de frequência cardíaca não disponíveis</div>';
     document.getElementById('hrZoneSub').textContent = 'Sem dados de FC';
   } else {
-    function buildHRZones(idx) {
-      const act   = activitiesWithHR[idx];
-      const maxHR = act.summary.maxHR;
-      const defs  = hrZoneDefs(maxHR);
-      const pcts  = computeHRZones(act, maxHR);
-      document.getElementById('hrZoneSub').textContent = `Based on your max heart rate of ${maxHR} bpm`;
-      renderZoneRows('hrZoneRows', defs, pcts);
-    }
-    buildZoneTabs('hrZoneTabs', 'hrZoneRows', 'hrZoneSub', activitiesWithHR, buildHRZones);
-    buildHRZones(0);
+    // Use max HR across all activities for a unified scale
+    const maxHR = Math.max(...activitiesWithHR.map(a => a.summary.maxHR));
+    const defs   = hrZoneDefs(maxHR);
+    const allPcts = activitiesWithHR.map(act => computeHRZones(act, maxHR));
+    const colors  = activitiesWithHR.map(act => act.color);
+    document.getElementById('hrZoneSub').textContent = `FC máx. de referência: ${maxHR} bpm`;
+    buildZoneLegend('hrZoneTabs', activitiesWithHR);
+    renderZoneRows('hrZoneRows', defs, allPcts, colors);
   }
 
-  // ── PACE ZONES ──
+  // ── PACE ZONES ── show all activities at once
   if (activitiesWithSpeed.length === 0) {
     document.getElementById('paceZoneRows').innerHTML = '<div class="zone-empty">Dados de pace não disponíveis</div>';
     document.getElementById('paceZoneSub').textContent = 'Sem dados de velocidade';
   } else {
-    function buildPaceZones(idx) {
-      const act        = activitiesWithSpeed[idx];
-      const avgKmh     = act.summary.avgSpeed;
-      const avgSecKm   = avgKmh > 0 ? 3600 / avgKmh : 360;
-      // Estimate 5k time from avg pace
-      const fiveKSec   = avgSecKm * 5;
-      const fiveKH     = Math.floor(fiveKSec / 3600);
-      const fiveKM     = Math.floor((fiveKSec % 3600) / 60);
-      const fiveKS     = Math.floor(fiveKSec % 60);
-      const fiveKStr   = fiveKH > 0
-        ? `${fiveKH}:${String(fiveKM).padStart(2,'0')}:${String(fiveKS).padStart(2,'0')}`
-        : `${fiveKM}:${String(fiveKS).padStart(2,'0')}`;
-      const defs = paceZoneDefs(avgSecKm);
-      const pcts = computePaceZones(act, avgSecKm);
-      document.getElementById('paceZoneSub').textContent =
-        `Based on a 5k race time of ${fiveKStr}`;
-      renderZoneRows('paceZoneRows', defs, pcts);
-    }
-    buildZoneTabs('paceZoneTabs', 'paceZoneRows', 'paceZoneSub', activitiesWithSpeed, buildPaceZones);
-    buildPaceZones(0);
+    // Use average pace across all activities as reference
+    const avgSpeeds = activitiesWithSpeed.map(a => a.summary.avgSpeed);
+    const refAvgKmh  = avgSpeeds.reduce((s, v) => s + v, 0) / avgSpeeds.length;
+    const refSecKm   = refAvgKmh > 0 ? 3600 / refAvgKmh : 360;
+    const fiveKSec   = refSecKm * 5;
+    const fiveKM     = Math.floor(fiveKSec / 60);
+    const fiveKS     = Math.floor(fiveKSec % 60);
+    const defs   = paceZoneDefs(refSecKm);
+    const allPcts = activitiesWithSpeed.map(act => {
+      const secKm = act.summary.avgSpeed > 0 ? 3600 / act.summary.avgSpeed : refSecKm;
+      return computePaceZones(act, secKm);
+    });
+    const colors = activitiesWithSpeed.map(act => act.color);
+    document.getElementById('paceZoneSub').textContent =
+      `Pace de referência: ${fiveKM}:${String(fiveKS).padStart(2,'0')}/km`;
+    buildZoneLegend('paceZoneTabs', activitiesWithSpeed);
+    renderZoneRows('paceZoneRows', defs, allPcts, colors);
   }
 
-  // Hide zoneRow entirely if no data at all
   if (activitiesWithHR.length === 0 && activitiesWithSpeed.length === 0) {
     zoneRow.style.display = 'none';
   } else {
@@ -692,6 +680,8 @@ function renderDashboard() {
   document.getElementById('uploadSection').classList.add('hidden');
   document.getElementById('dashboard').classList.remove('hidden');
   document.getElementById('clearBtn').classList.remove('hidden');
+  const mobClear = document.getElementById('clearBtnMob');
+  if (mobClear) mobClear.classList.remove('hidden');
 
   document.getElementById('activityCount').textContent =
     isSingle
@@ -1180,6 +1170,8 @@ function showUpload() {
   document.getElementById('uploadSection').classList.remove('hidden');
   document.getElementById('dashboard').classList.add('hidden');
   document.getElementById('clearBtn').classList.add('hidden');
+  const mobClear = document.getElementById('clearBtnMob');
+  if (mobClear) mobClear.classList.add('hidden');
 }
 
 function clearAll() {
