@@ -1427,7 +1427,7 @@ function tlUpdate(value) {
   // Atualiza todos os velocímetros
   speedoUpdateAll(tl.scrubData, sec);
 
-  // Modo "Seguir": centraliza o mapa na posição média das atividades
+  // Modo "Seguir": centraliza o mapa na posição atual
   if (state.mapFollow && state.leafletMap && tl.scrubData.length > 0) {
     const positions = [];
     tl.scrubData.forEach(d => {
@@ -1436,13 +1436,20 @@ function tlUpdate(value) {
       const pos = tlInterp(d.gpsPoints, actSec);
       if (pos) positions.push(pos);
     });
-    if (positions.length === 1) {
-      state.leafletMap.panTo(positions[0], { animate: true, duration: 0.3, easeLinearity: 0.5 });
-    } else if (positions.length > 1) {
-      // Centraliza no ponto médio de todas as atividades
+
+    if (positions.length > 0) {
       const lat = positions.reduce((s, p) => s + p[0], 0) / positions.length;
       const lon = positions.reduce((s, p) => s + p[1], 0) / positions.length;
-      state.leafletMap.panTo([lat, lon], { animate: true, duration: 0.3, easeLinearity: 0.5 });
+      const center = [lat, lon];
+
+      // Durante a animação automática (raf ativo) usa setView sem animação
+      // para evitar conflito entre o raf e a animação interna do Leaflet.
+      // Ao arrastar o scrubber manualmente (raf inativo) usa panTo animado.
+      if (tl.raf) {
+        state.leafletMap.setView(center, state.leafletMap.getZoom(), { animate: false });
+      } else {
+        state.leafletMap.panTo(center, { animate: true, duration: 0.25 });
+      }
     }
   }
 }
