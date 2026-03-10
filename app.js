@@ -987,6 +987,10 @@ function destroyMap() {
     state.leafletMap.remove();
     state.leafletMap = null;
   }
+  // Reseta o modo seguir ao recarregar
+  state.mapFollow = false;
+  const btn = document.getElementById('mapFollowBtn');
+  if (btn) btn.classList.remove('active');
 }
 
 /**
@@ -1422,6 +1426,25 @@ function tlUpdate(value) {
 
   // Atualiza todos os velocímetros
   speedoUpdateAll(tl.scrubData, sec);
+
+  // Modo "Seguir": centraliza o mapa na posição média das atividades
+  if (state.mapFollow && state.leafletMap && tl.scrubData.length > 0) {
+    const positions = [];
+    tl.scrubData.forEach(d => {
+      if (!d.gpsPoints.length) return;
+      const actSec = Math.min(sec, d.gpsPoints[d.gpsPoints.length - 1].elapsedSec);
+      const pos = tlInterp(d.gpsPoints, actSec);
+      if (pos) positions.push(pos);
+    });
+    if (positions.length === 1) {
+      state.leafletMap.panTo(positions[0], { animate: true, duration: 0.3, easeLinearity: 0.5 });
+    } else if (positions.length > 1) {
+      // Centraliza no ponto médio de todas as atividades
+      const lat = positions.reduce((s, p) => s + p[0], 0) / positions.length;
+      const lon = positions.reduce((s, p) => s + p[1], 0) / positions.length;
+      state.leafletMap.panTo([lat, lon], { animate: true, duration: 0.3, easeLinearity: 0.5 });
+    }
+  }
 }
 
 function tlSetUI(playing) {
@@ -2024,6 +2047,23 @@ document.addEventListener('keydown', e => {
 });
 
 window.toggleMapFullscreen = toggleMapFullscreen;
+
+// ──────────────────────────────────────────────────────
+// MAPA — SEGUIR POSIÇÃO
+// ──────────────────────────────────────────────────────
+
+function toggleMapFollow() {
+  state.mapFollow = !state.mapFollow;
+  const btn = document.getElementById('mapFollowBtn');
+  if (btn) btn.classList.toggle('active', state.mapFollow);
+
+  // Se acabou de ativar e já há timeline, centraliza imediatamente
+  if (state.mapFollow && state.timeline) {
+    const scrubEl = document.getElementById('timelineScrubber');
+    if (scrubEl) tlUpdate(+scrubEl.value);
+  }
+}
+window.toggleMapFollow = toggleMapFollow;
 
 // Expose state globally for history integration
 window.state = state;

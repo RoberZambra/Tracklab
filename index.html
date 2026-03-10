@@ -182,6 +182,7 @@
     .map-layer-btn{font-family:var(--font-m);font-size:.72rem;font-weight:600;padding:.22rem .55rem;border-radius:5px;border:1.5px solid var(--border);background:var(--bg3);color:var(--muted);cursor:pointer;transition:all .15s;}
     .map-layer-btn.active{background:var(--brand-bg);border-color:rgba(0,71,255,.35);color:var(--brand);}
     #map3dBtn.active{background:rgba(234,88,12,.1);border-color:rgba(234,88,12,.4);color:#ea580c;}
+    #mapFollowBtn.active{background:rgba(10,138,92,.12);border-color:rgba(10,138,92,.45);color:#0a8a5c;}
     .leaflet-container{font-family:var(--font-m)!important;}
     .leaflet-control-zoom a{background:var(--bg2)!important;border-color:var(--border)!important;color:var(--text2)!important;}
     .leaflet-control-zoom a:hover{background:var(--bg3)!important;color:var(--text)!important;}
@@ -540,6 +541,11 @@
             <button class="map-layer-btn" data-layer="terrain">Relevo</button>
             <div style="width:1px;height:16px;background:var(--border);margin:0 .2rem;"></div>
             <button id="map3dBtn" class="map-layer-btn" title="Inclinar vista 3D" onclick="toggle3D()">3D</button>
+            <div style="width:1px;height:16px;background:var(--border);margin:0 .2rem;"></div>
+            <button id="mapFollowBtn" class="map-layer-btn" title="Seguir posição no trajeto" onclick="toggleMapFollow()" style="display:flex;align-items:center;gap:.3rem;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/><circle cx="12" cy="12" r="9" stroke-opacity=".3"/></svg>
+              Seguir
+            </button>
             <div style="width:1px;height:16px;background:var(--border);margin:0 .2rem;"></div>
             <button id="mapFullscreenBtn" class="map-layer-btn" title="Tela inteira" onclick="toggleMapFullscreen()" style="display:flex;align-items:center;gap:.3rem;">
               <svg id="mapFsIconExpand" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
