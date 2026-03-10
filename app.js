@@ -961,8 +961,24 @@ function toggle3D() {
   if (!mapEl) return;
   const is3D = mapEl.classList.toggle('map-3d');
   if (btn) btn.classList.toggle('active', is3D);
+
+  // Ao entrar no 3D, ativa camada Relevo; ao sair, restaura a anterior
+  if (is3D) {
+    state._layerBeforeEscape = state._currentLayerKey || 'streets';
+    setMapLayer('terrain');
+    document.querySelectorAll('.map-layer-btn:not(#map3dBtn)').forEach(b => {
+      b.classList.toggle('active', b.dataset.layer === 'terrain');
+    });
+  } else {
+    const restore = state._layerBeforeEscape || 'streets';
+    setMapLayer(restore);
+    document.querySelectorAll('.map-layer-btn:not(#map3dBtn)').forEach(b => {
+      b.classList.toggle('active', b.dataset.layer === restore);
+    });
+  }
+
   // Trigger Leaflet resize after transform settles
-  setTimeout(() => { if (state.leafletMap) state.leafletMap.invalidateSize(); }, 350);
+  setTimeout(() => { if (state.leafletMap) state.leafletMap.invalidateSize(); }, 450);
 }
 
 /** Destroi instância anterior do mapa (necessário para re-renderizar) */
@@ -1097,6 +1113,264 @@ function buildMap() {
 // TIMELINE — funções globais, listeners registrados UMA vez em initApp
 // ─────────────────────────────────────────────────────────────────────
 
+// ─────────────────────────────────────────────────────────────────────
+// VELOCÍMETROS — um por atividade, canto superior direito do mapa
+// ─────────────────────────────────────────────────────────────────────
+
+/**
+ * Constrói o SVG completo de um velocímetro.
+ * Inclui: arco de fundo, arco colorido, ticks com labels de valor,
+ * agulha e ponto central. Retorna o elemento DOM criado.
+ */
+function speedoBuildWidget(actId, actColor, actName, maxSpeed) {
+  const SIZE   = 120;
+  const cx     = SIZE / 2;       // 60
+  const cy     = SIZE / 2;       // 60
+  const R_ARC  = 44;             // raio do arco principal
+  const R_TICK = 50;             // raio externo dos ticks
+  const START_DEG = -225;        // -225° = 7 horas (igual a um relógio)
+  const TOTAL_DEG = 270;         // sweep total
+
+  const NS = 'http://www.w3.org/2000/svg';
+
+  // ── helper: ponto em coordenadas cartesianas ──
+  const pt = (r, deg) => {
+    const rad = deg * Math.PI / 180;
+    return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+  };
+
+  // ── Wrapper ──
+  const widget = document.createElement('div');
+  widget.className = 'speedo-widget';
+  widget.dataset.actId = actId;
+
+  // ── SVG ──
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', `0 0 ${SIZE} ${SIZE}`);
+  svg.classList.add('speedo-svg');
+
+  // Circunferência completa do arco
+  const circ = 2 * Math.PI * R_ARC;           // ≈ 276.46
+  const arcLen = circ * (TOTAL_DEG / 360);     // ≈ 207.35
+
+  // dashoffset para começar no ângulo certo:
+  // O stroke-dasharray começa às 3h (0°). Precisamos começar em START_DEG.
+  // Offset = circunferência * (- START_DEG / 360) para rotacionar o início
+  // Equivalente a usar um transform rotate no círculo, mas dashoffset é mais simples.
+  // Ângulo START_DEG = -225 → offset = circ * (225/360)
+  const dashOffset = -(circ * ((-START_DEG) / 360));
+
+  // Fundo do arco (cinza escuro)
+  const arcBg = document.createElementNS(NS, 'circle');
+  arcBg.setAttribute('cx', cx); arcBg.setAttribute('cy', cy); arcBg.setAttribute('r', R_ARC);
+  arcBg.setAttribute('fill', 'none');
+  arcBg.setAttribute('stroke', 'rgba(255,255,255,0.08)');
+  arcBg.setAttribute('stroke-width', '4');
+  arcBg.setAttribute('stroke-dasharray', `${arcLen.toFixed(2)} ${(circ - arcLen).toFixed(2)}`);
+  arcBg.setAttribute('stroke-dashoffset', dashOffset.toFixed(2));
+  arcBg.setAttribute('stroke-linecap', 'round');
+  svg.appendChild(arcBg);
+
+  // Arco colorido (velocidade atual)
+  const arcFill = document.createElementNS(NS, 'circle');
+  arcFill.setAttribute('cx', cx); arcFill.setAttribute('cy', cy); arcFill.setAttribute('r', R_ARC);
+  arcFill.setAttribute('fill', 'none');
+  arcFill.setAttribute('stroke', actColor);
+  arcFill.setAttribute('stroke-width', '4');
+  arcFill.setAttribute('stroke-dasharray', `0 ${circ.toFixed(2)}`);
+  arcFill.setAttribute('stroke-dashoffset', dashOffset.toFixed(2));
+  arcFill.setAttribute('stroke-linecap', 'round');
+  arcFill.style.transition = 'stroke-dasharray .22s ease, stroke .22s ease';
+  arcFill.dataset.circ    = circ.toFixed(2);
+  arcFill.dataset.arcLen  = arcLen.toFixed(2);
+  svg.appendChild(arcFill);
+
+  // ── Ticks + labels de valor (como relógio) ──
+  // 5 divisões principais (0, 25%, 50%, 75%, 100%) + 4 menores entre cada par
+  const NUM_MAJOR = 5;   // 0, max/4, max/2, 3max/4, max
+  const NUM_MINOR = 3;   // entre cada par de major
+  const totalTicks = (NUM_MAJOR - 1) * (NUM_MINOR + 1) + 1; // 17
+
+  for (let i = 0; i < totalTicks; i++) {
+    const frac      = i / (totalTicks - 1);
+    const angleDeg  = START_DEG + frac * TOTAL_DEG;
+    const isMajor   = i % (NUM_MINOR + 1) === 0;
+
+    // Tick line
+    const rOuter = R_TICK;
+    const rInner = isMajor ? R_TICK - 7 : R_TICK - 4;
+    const p1 = pt(rOuter, angleDeg);
+    const p2 = pt(rInner, angleDeg);
+    const tick = document.createElementNS(NS, 'line');
+    tick.setAttribute('x1', p1.x.toFixed(2)); tick.setAttribute('y1', p1.y.toFixed(2));
+    tick.setAttribute('x2', p2.x.toFixed(2)); tick.setAttribute('y2', p2.y.toFixed(2));
+    tick.setAttribute('stroke', isMajor ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.15)');
+    tick.setAttribute('stroke-width', isMajor ? '1.5' : '1');
+    tick.setAttribute('stroke-linecap', 'round');
+    svg.appendChild(tick);
+
+    // Label numérico apenas nos ticks principais
+    if (isMajor) {
+      const labelVal  = Math.round(frac * maxSpeed);
+      const rLabel    = R_TICK - 14;
+      const pL        = pt(rLabel, angleDeg);
+      const text      = document.createElementNS(NS, 'text');
+      text.setAttribute('x', pL.x.toFixed(2));
+      text.setAttribute('y', pL.y.toFixed(2));
+      text.setAttribute('text-anchor', 'middle');
+      text.setAttribute('dominant-baseline', 'central');
+      text.setAttribute('fill', 'rgba(255,255,255,0.45)');
+      text.setAttribute('font-size', '6.5');
+      text.setAttribute('font-family', 'Arial, sans-serif');
+      text.setAttribute('font-weight', '500');
+      text.textContent = labelVal;
+      svg.appendChild(text);
+    }
+  }
+
+  // ── Agulha ──
+  const needleGroup = document.createElementNS(NS, 'g');
+  needleGroup.style.transformOrigin = `${cx}px ${cy}px`;
+  needleGroup.style.transform       = `rotate(${START_DEG}deg)`;
+  needleGroup.style.transition      = 'transform .22s ease';
+
+  // Linha da agulha (do centro até r=38)
+  const needleLine = document.createElementNS(NS, 'line');
+  needleLine.setAttribute('x1', cx); needleLine.setAttribute('y1', cy);
+  needleLine.setAttribute('x2', cx); needleLine.setAttribute('y2', cy - 38);
+  needleLine.setAttribute('stroke', '#ffffff');
+  needleLine.setAttribute('stroke-width', '1.8');
+  needleLine.setAttribute('stroke-linecap', 'round');
+  needleGroup.appendChild(needleLine);
+
+  // Contra-peso (pequeno segmento atrás)
+  const counterW = document.createElementNS(NS, 'line');
+  counterW.setAttribute('x1', cx); counterW.setAttribute('y1', cy);
+  counterW.setAttribute('x2', cx); counterW.setAttribute('y2', cy + 8);
+  counterW.setAttribute('stroke', 'rgba(255,255,255,0.35)');
+  counterW.setAttribute('stroke-width', '2.5');
+  counterW.setAttribute('stroke-linecap', 'round');
+  needleGroup.appendChild(counterW);
+
+  svg.appendChild(needleGroup);
+
+  // Ponto central
+  const dot1 = document.createElementNS(NS, 'circle');
+  dot1.setAttribute('cx', cx); dot1.setAttribute('cy', cy); dot1.setAttribute('r', '5');
+  dot1.setAttribute('fill', 'rgba(255,255,255,0.9)');
+  svg.appendChild(dot1);
+
+  const dot2 = document.createElementNS(NS, 'circle');
+  dot2.setAttribute('cx', cx); dot2.setAttribute('cy', cy); dot2.setAttribute('r', '3');
+  dot2.setAttribute('fill', actColor);
+  svg.appendChild(dot2);
+
+  widget.appendChild(svg);
+
+  // Valor numérico
+  const valEl = document.createElement('span');
+  valEl.className = 'speedo-val';
+  valEl.textContent = '0';
+  widget.appendChild(valEl);
+
+  // Unidade
+  const unitEl = document.createElement('span');
+  unitEl.className = 'speedo-unit';
+  unitEl.textContent = 'km/h';
+  widget.appendChild(unitEl);
+
+  // Nome da atividade (label abaixo)
+  const nameEl = document.createElement('span');
+  nameEl.className = 'speedo-name';
+  nameEl.style.color = actColor;
+  nameEl.title = actName;
+  nameEl.textContent = actName.replace(/\.(tcx|gpx)$/i, '');
+  widget.appendChild(nameEl);
+
+  // Refs para atualização rápida
+  widget._arcFill    = arcFill;
+  widget._needle     = needleGroup;
+  widget._valEl      = valEl;
+  widget._maxSpeed   = maxSpeed;
+  widget._actColor   = actColor;
+  widget._startDeg   = START_DEG;
+  widget._totalDeg   = TOTAL_DEG;
+
+  return widget;
+}
+
+/**
+ * Atualiza um widget de velocímetro com a velocidade atual.
+ */
+function speedoUpdateWidget(widget, speedKmh) {
+  if (!widget) return;
+  const speed   = Math.max(0, speedKmh || 0);
+  const max     = widget._maxSpeed || 40;
+  const pct     = Math.min(speed / max, 1);
+
+  // Valor numérico
+  widget._valEl.textContent = speed.toFixed(1);
+
+  // Arco
+  const circ   = parseFloat(widget._arcFill.dataset.circ);
+  const arcLen = parseFloat(widget._arcFill.dataset.arcLen);
+  const filled = pct * arcLen;
+  const gap    = circ - filled;
+  widget._arcFill.setAttribute('stroke-dasharray', `${filled.toFixed(2)} ${gap.toFixed(2)}`);
+
+  // Cor dinâmica
+  let color = widget._actColor;
+  if (pct > 0.85)       color = '#ef4444';
+  else if (pct > 0.60)  color = '#f59e0b';
+  widget._arcFill.setAttribute('stroke', color);
+
+  // Agulha
+  const angleDeg = widget._startDeg + pct * widget._totalDeg;
+  widget._needle.style.transform = `rotate(${angleDeg}deg)`;
+}
+
+/**
+ * Constrói o container de velocímetros para todas as atividades com GPS+velocidade.
+ * Chamado por initTimeline.
+ */
+function speedoBuildAll(scrubData, maxSpeed) {
+  const container = document.getElementById('speedoContainer');
+  if (!container) return;
+  container.innerHTML = '';
+
+  const eligible = scrubData.filter(d => d.gpsPoints.some(p => p.speed > 0));
+  if (!eligible.length) {
+    container.classList.remove('visible');
+    return;
+  }
+
+  eligible.forEach(d => {
+    const widget = speedoBuildWidget(d.act.id, d.act.color, d.act.filename, maxSpeed);
+    container.appendChild(widget);
+  });
+
+  container.classList.add('visible');
+}
+
+/**
+ * Atualiza todos os velocímetros para um dado segundo do trajeto.
+ * Chamado por tlUpdate.
+ */
+function speedoUpdateAll(scrubData, sec) {
+  const container = document.getElementById('speedoContainer');
+  if (!container || !container.classList.contains('visible')) return;
+
+  scrubData.forEach(d => {
+    if (!d.gpsPoints.some(p => p.speed > 0)) return;
+    const widget = container.querySelector(`.speedo-widget[data-act-id="${d.act.id}"]`);
+    if (!widget) return;
+    const actSec = Math.min(sec, d.gpsPoints[d.gpsPoints.length - 1].elapsedSec);
+    const pt     = d.gpsPoints[tlFindIdx(d.gpsPoints, actSec)];
+    const speed  = (pt && pt.speed > 0) ? pt.speed : 0;
+    speedoUpdateWidget(widget, speed);
+  });
+}
+
 function tlFindIdx(pts, sec) {
   if (!pts.length) return 0;
   let lo = 0, hi = pts.length - 1;
@@ -1145,6 +1419,9 @@ function tlUpdate(value) {
     if (pt.altitude != null)           p.push(`<span>⛰ ${Math.round(pt.altitude)}<small style="opacity:.5"> m</small></span>`);
     el.innerHTML = p.join('') || '<span style="opacity:.4">—</span>';
   });
+
+  // Atualiza todos os velocímetros
+  speedoUpdateAll(tl.scrubData, sec);
 }
 
 function tlSetUI(playing) {
@@ -1207,11 +1484,25 @@ function initTimeline(scrubData) {
 
   // 1× percorre o scrubber em ~30s reais | 2×=15s | 5×=6s
   const baseSpeed = 1000 / 30;
-  state.timeline = { scrubData, maxSec, isPlaying: false, speed: baseSpeed, baseSpeed, raf: null, lastTS: null };
+
+  // Calcula velocidade máxima entre todas as atividades (para escala do velocímetro)
+  let maxSpeed = 0;
+  scrubData.forEach(d => {
+    d.gpsPoints.forEach(p => {
+      if (p.speed && p.speed > maxSpeed) maxSpeed = p.speed;
+    });
+  });
+  // Arredonda para próximo múltiplo de 10 e garante mínimo de 30 km/h
+  maxSpeed = Math.max(Math.ceil(maxSpeed / 10) * 10, 30);
+
+  state.timeline = { scrubData, maxSec, isPlaying: false, speed: baseSpeed, baseSpeed, raf: null, lastTS: null, maxSpeed };
 
   const labelEnd = document.getElementById('timelineLabelEnd');
   const statsEl  = document.getElementById('timelineStats');
   if (labelEnd) labelEnd.textContent = secondsToHMS(maxSec);
+
+  // Constrói um velocímetro por atividade com dados de velocidade
+  speedoBuildAll(scrubData, maxSpeed);
 
   document.querySelectorAll('.speed-chip').forEach(c =>
     c.classList.toggle('active', c.dataset.speed === '1')
@@ -1447,7 +1738,7 @@ function buildChart() {
           display: true,
           labels: {
             color: 'rgba(10,10,18,0.45)',
-            font: { family: 'IBM Plex Mono', size: 11 },
+            font: { family: 'Arial', size: 11 },
             boxWidth: 14,
             boxHeight: 14,
             usePointStyle: true,
@@ -1460,8 +1751,8 @@ function buildChart() {
           borderWidth: 1,
           titleColor: 'rgba(10,10,18,0.45)',
           bodyColor: 'rgba(10,10,18,0.85)',
-          titleFont: { family: 'IBM Plex Mono', size: 10 },
-          bodyFont: { family: 'IBM Plex Mono', size: 12 },
+          titleFont: { family: 'Arial', size: 10 },
+          bodyFont: { family: 'Arial', size: 12 },
           padding: 12,
           callbacks: {
             title: items => {
@@ -1485,11 +1776,11 @@ function buildChart() {
             display: true,
             text: state.currentAxis === 'time' ? 'Tempo (min)' : 'Distância (km)',
             color: 'rgba(10,10,18,0.3)',
-            font: { family: 'IBM Plex Mono', size: 10 },
+            font: { family: 'Arial', size: 10 },
           },
           ticks: {
             color: 'rgba(10,10,18,0.3)',
-            font: { family: 'IBM Plex Mono', size: 10 },
+            font: { family: 'Arial', size: 10 },
           },
           grid: { color: 'rgba(0,71,255,0.05)' },
         },
@@ -1498,11 +1789,11 @@ function buildChart() {
             display: true,
             text: `${metric.label} (${metric.unit})`,
             color: 'rgba(10,10,18,0.3)',
-            font: { family: 'IBM Plex Mono', size: 10 },
+            font: { family: 'Arial', size: 10 },
           },
           ticks: {
             color: 'rgba(10,10,18,0.3)',
-            font: { family: 'IBM Plex Mono', size: 10 },
+            font: { family: 'Arial', size: 10 },
           },
           grid: { color: 'rgba(0,71,255,0.05)' },
         },
@@ -1690,6 +1981,49 @@ function initApp() {
 }
 window.initApp = initApp;
 window.toggle3D = toggle3D;
+
+// ──────────────────────────────────────────────────────
+// MAPA — TELA INTEIRA
+// ──────────────────────────────────────────────────────
+
+function toggleMapFullscreen() {
+  const section   = document.getElementById('mapSection');
+  const btnExpand = document.getElementById('mapFsIconExpand');
+  const btnCompress = document.getElementById('mapFsIconCompress');
+  const btn       = document.getElementById('mapFullscreenBtn');
+  if (!section) return;
+
+  const isFs = section.classList.toggle('map-fullscreen');
+
+  // Atualiza ícone
+  if (btnExpand)   btnExpand.style.display   = isFs ? 'none' : '';
+  if (btnCompress) btnCompress.style.display = isFs ? ''     : 'none';
+  if (btn) btn.title = isFs ? 'Sair da tela inteira' : 'Tela inteira';
+
+  // Texto do botão
+  const textNode = btn ? Array.from(btn.childNodes).find(n => n.nodeType === 3) : null;
+  if (textNode) textNode.textContent = isFs ? ' Sair' : ' Tela Inteira';
+
+  // Impede scroll do body no modo fullscreen
+  document.body.style.overflow = isFs ? 'hidden' : '';
+
+  // Recalcula tamanho do mapa após transição
+  setTimeout(() => {
+    if (state.leafletMap) state.leafletMap.invalidateSize();
+  }, 50);
+}
+
+// Fechar fullscreen com Escape
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    const section = document.getElementById('mapSection');
+    if (section && section.classList.contains('map-fullscreen')) {
+      toggleMapFullscreen();
+    }
+  }
+});
+
+window.toggleMapFullscreen = toggleMapFullscreen;
 
 // Expose state globally for history integration
 window.state = state;

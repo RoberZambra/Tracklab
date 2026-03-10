@@ -7,10 +7,9 @@
   <meta name="theme-color" content="#0d0d0d" />
   <meta name="description" content="Compare suas atividades TCX e GPX com gráficos interativos." />
   <link rel="manifest" href="manifest.json" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>tailwind.config={theme:{extend:{fontFamily:{display:['Syne','sans-serif'],body:['Inter','sans-serif'],mono:['IBM Plex Mono','monospace']}}}};</script>
+  <script>tailwind.config={theme:{extend:{}}};</script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
   <style>
     :root{
@@ -20,9 +19,9 @@
       --brand:#0047ff;--brand2:#2563ff;--brand-bg:rgba(0,71,255,0.07);
       --blue:#0047ff;--blue-bg:rgba(0,71,255,0.07);
       --green:#0a8a5c;--yellow:#b45309;
-      --font-d:'Syne',sans-serif;
-      --font-b:'Inter',sans-serif;
-      --font-m:'IBM Plex Mono',monospace;
+      --font-d:'Arial',sans-serif;
+      --font-b:'Arial',sans-serif;
+      --font-m:'Arial',sans-serif;
       --r:6px;--rl:10px;
       --shadow:0 1px 3px rgba(0,0,0,0.07),0 4px 16px rgba(0,71,255,0.06);
     }
@@ -124,7 +123,7 @@
     .zone-bar-wrap{position:relative;}
     .zone-bar-track{height:18px;background:rgba(0,0,0,0.05);border-radius:4px;overflow:hidden;}
     .zone-bar-fill{height:100%;border-radius:4px;transition:width 1s cubic-bezier(.34,1.1,.64,1);width:0;position:relative;}
-    .zone-bar-fill::after{content:attr(data-pct);position:absolute;right:7px;top:50%;transform:translateY(-50%);font-family:'IBM Plex Mono',monospace;font-weight:500;font-size:.72rem;color:rgba(255,255,255,0.9);white-space:nowrap;pointer-events:none;}
+    .zone-bar-fill::after{content:attr(data-pct);position:absolute;right:7px;top:50%;transform:translateY(-50%);font-family:'Arial',sans-serif;font-weight:500;font-size:.72rem;color:rgba(255,255,255,0.9);white-space:nowrap;pointer-events:none;}
     .zone-bar-fill.pct-outside::after{right:auto;left:calc(100% + 5px);color:var(--text2);}
     .zone-range{font-family:var(--font-m);font-size:.72rem;color:var(--muted);text-align:right;white-space:nowrap;line-height:1.3;}
     .zone-empty{padding:1.4rem 1.2rem;font-family:var(--font-m);font-size:.8rem;color:var(--muted);text-align:center;}
@@ -161,11 +160,11 @@
     .axis-btn.active{background:var(--brand-bg);border-color:rgba(0,71,255,0.3);color:var(--brand);}
 
     /* MAP */
-    #mapSection{background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--rl);overflow:visible;margin-bottom:1rem;box-shadow:var(--shadow);}
+    #mapSection{background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--rl);overflow:hidden;margin-bottom:1rem;box-shadow:var(--shadow);}
     #mapSection .map-header{padding:.82rem 1.2rem;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border2);}
-    #routeMap{height:400px;width:100%;background:#a8c8e8;transition:transform .35s ease,border-radius .35s ease;}
-    #mapSection{perspective:1200px;perspective-origin:50% 100%;}
-    #routeMap.map-3d{transform:rotateX(28deg) scale(1.08);transform-origin:50% 100%;border-radius:8px 8px 0 0;}
+    #mapPerspectiveWrap{overflow:hidden;width:100%;line-height:0;perspective:900px;perspective-origin:50% 0%;}
+    #routeMap{height:400px;width:100%;background:#a8c8e8;transition:transform .45s cubic-bezier(.4,0,.2,1);display:block;}
+    #routeMap.map-3d{transform:rotateX(38deg);transform-origin:50% 0%;}
     /* Scrubber thumb */
     #timelineScrubber::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--brand);border:3px solid #fff;box-shadow:0 1px 8px rgba(0,71,255,0.4);cursor:pointer;position:relative;z-index:1;}
     #timelineScrubber::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--brand);border:3px solid #fff;box-shadow:0 1px 8px rgba(0,71,255,0.4);cursor:pointer;}
@@ -192,6 +191,52 @@
     .map-legend{display:flex;flex-wrap:wrap;gap:.5rem;padding:.62rem 1.2rem;border-top:1px solid var(--border2);}
     .map-legend-item{display:flex;align-items:center;gap:.35rem;font-family:var(--font-m);font-size:.72rem;color:var(--muted);}
     .map-legend-line{width:16px;height:3px;border-radius:2px;}
+
+    /* SPEEDOMETER */
+    #speedoContainer{
+      position:absolute;top:10px;right:10px;z-index:800;
+      display:none;flex-direction:column;gap:8px;
+      align-items:flex-end;pointer-events:none;
+    }
+    #speedoContainer.visible{display:flex;}
+    .speedo-widget{
+      width:120px;height:120px;
+      background:rgba(10,10,18,0.82);
+      border:1.5px solid rgba(255,255,255,0.13);
+      border-radius:50%;
+      backdrop-filter:blur(12px);
+      -webkit-backdrop-filter:blur(12px);
+      box-shadow:0 4px 20px rgba(0,0,0,0.45),inset 0 0 0 1px rgba(255,255,255,0.04);
+      position:relative;
+      display:flex;align-items:center;justify-content:center;flex-direction:column;
+      flex-shrink:0;
+    }
+    .speedo-svg{position:absolute;top:0;left:0;width:100%;height:100%;overflow:visible;}
+    .speedo-val{font-family:'Arial',sans-serif;font-weight:800;font-size:.95rem;color:#fff;line-height:1;
+      position:relative;z-index:2;letter-spacing:-.01em;margin-top:-14px;}
+    .speedo-unit{font-family:'Arial',sans-serif;font-size:.58rem;color:rgba(255,255,255,.4);
+      letter-spacing:.1em;text-transform:uppercase;position:relative;z-index:2;margin-top:1px;}
+    .speedo-name{font-family:'Arial',sans-serif;font-size:.52rem;
+      color:rgba(255,255,255,.3);letter-spacing:.08em;text-transform:uppercase;
+      position:relative;z-index:2;margin-top:2px;max-width:80px;
+      overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;}
+    /* MAP FULLSCREEN */
+    #mapSection.map-fullscreen{
+      position:fixed;inset:0;z-index:2000;
+      border-radius:0!important;border:none!important;
+      display:flex;flex-direction:column;
+      background:var(--bg2);
+    }
+    #mapSection.map-fullscreen .map-header{flex-shrink:0;}
+    #mapSection.map-fullscreen #mapPerspectiveWrap{flex:1;overflow:hidden;}
+    #mapSection.map-fullscreen #routeMap{height:100%!important;}
+    #mapSection.map-fullscreen #mapTimeline{flex-shrink:0;}
+    #mapSection.map-fullscreen .map-legend{flex-shrink:0;}
+    #mapSection.map-fullscreen #mapPerspectiveWrap #routeMap.map-3d{
+      transform:rotateX(38deg);transform-origin:50% 0%;
+    }
+
+    #mapPerspectiveWrap{position:relative;}
 
     /* HISTORY */
     .history-card{background:var(--bg2);border:1.5px solid var(--border);border-left:3px solid var(--accent,var(--brand));border-radius:var(--rl);padding:.9rem 1rem;cursor:pointer;transition:all .18s;box-shadow:var(--shadow);}
@@ -449,23 +494,66 @@
         </div>
       </div>
 
-      <!-- Map -->
+      <!-- Chart -->
+      <div class="panel" style="margin-bottom:1rem;">
+        <div class="panel-hd">
+          <div class="panel-hd-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            Gráficos Sobrepostos
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:.32rem;" id="metricBtns"></div>
+        </div>
+        <div style="padding:.82rem 1.2rem;">
+          <div style="display:flex;gap:.32rem;margin-bottom:.9rem;" id="xAxisBtns">
+            <button data-axis="time" class="axis-btn active">Eixo: Tempo</button>
+            <button data-axis="distance" class="axis-btn">Eixo: Distância</button>
+          </div>
+          <div style="position:relative;height:320px;">
+            <canvas id="mainChart"></canvas>
+          </div>
+          <p style="font-family:var(--font-m);font-size:.72rem;color:var(--muted);margin-top:.82rem;text-align:center;">Scroll/pinch para zoom · Clique na legenda para mostrar/ocultar</p>
+        </div>
+      </div>
+
+      <!-- Splits -->
+      <div id="splitsPanel" class="panel hidden" style="margin-bottom:1rem;">
+        <div class="panel-hd" style="gap:.6rem;flex-wrap:wrap;">
+          <div class="panel-hd-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2.2"><line x1="12" y1="2" x2="12" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            Splits por Km
+          </div>
+          <div id="splitsActivityTabs" style="display:flex;gap:.3rem;flex-wrap:wrap;margin-left:auto;"></div>
+        </div>
+        <div id="splitsContent" style="padding:.6rem 1.2rem 1rem;overflow-x:auto;"></div>
+      </div>
+
+      <!-- Map — sempre ao final -->
       <div id="mapSection" class="hidden">
         <div class="map-header">
           <div style="font-family:var(--font-d);font-size:.88rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;display:flex;align-items:center;gap:.45rem;">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
             Trajetos no Mapa
           </div>
-          <div style="display:flex;align-items:center;gap:.4rem;">
+          <div style="display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;">
             <button class="map-layer-btn active" data-layer="streets">Mapa</button>
             <button class="map-layer-btn" data-layer="satellite">Satélite</button>
             <button class="map-layer-btn" data-layer="terrain">Relevo</button>
             <div style="width:1px;height:16px;background:var(--border);margin:0 .2rem;"></div>
             <button id="map3dBtn" class="map-layer-btn" title="Inclinar vista 3D" onclick="toggle3D()">3D</button>
-            <span style="font-family:var(--font-m);font-size:.72rem;color:var(--muted);margin-left:.3rem;">● início &nbsp; ◆ fim</span>
+            <div style="width:1px;height:16px;background:var(--border);margin:0 .2rem;"></div>
+            <button id="mapFullscreenBtn" class="map-layer-btn" title="Tela inteira" onclick="toggleMapFullscreen()" style="display:flex;align-items:center;gap:.3rem;">
+              <svg id="mapFsIconExpand" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+              <svg id="mapFsIconCompress" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="display:none;"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="10" y1="14" x2="3" y2="21"/><line x1="21" y1="3" x2="14" y2="10"/></svg>
+              Tela Inteira
+            </button>
+            <span style="font-family:var(--font-m);font-size:.72rem;color:var(--muted);margin-left:.2rem;">● início &nbsp; ◆ fim</span>
           </div>
         </div>
-        <div id="routeMap"></div>
+        <div id="mapPerspectiveWrap">
+          <div id="routeMap"></div>
+          <!-- Speedometers: gerados dinamicamente por atividade -->
+          <div id="speedoContainer"></div>
+        </div>
         <!-- TIMELINE SCRUBBER -->
         <div id="mapTimeline" style="padding:.8rem 1.2rem .8rem;border-top:1px solid var(--border2);">
           <!-- Row 1: play button + speed chips + time display -->
@@ -495,39 +583,6 @@
           <div id="timelineStats" style="display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.55rem;"></div>
         </div>
         <div class="map-legend" id="mapLegend"></div>
-      </div>
-
-      <!-- Splits -->
-      <div id="splitsPanel" class="panel hidden" style="margin-bottom:1rem;">
-        <div class="panel-hd" style="gap:.6rem;flex-wrap:wrap;">
-          <div class="panel-hd-title">
-            <svg viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2.2"><line x1="12" y1="2" x2="12" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-            Splits por Km
-          </div>
-          <div id="splitsActivityTabs" style="display:flex;gap:.3rem;flex-wrap:wrap;margin-left:auto;"></div>
-        </div>
-        <div id="splitsContent" style="padding:.6rem 1.2rem 1rem;overflow-x:auto;"></div>
-      </div>
-
-      <!-- Chart -->
-      <div class="panel">
-        <div class="panel-hd">
-          <div class="panel-hd-title">
-            <svg viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-            Gráficos Sobrepostos
-          </div>
-          <div style="display:flex;flex-wrap:wrap;gap:.32rem;" id="metricBtns"></div>
-        </div>
-        <div style="padding:.82rem 1.2rem;">
-          <div style="display:flex;gap:.32rem;margin-bottom:.9rem;" id="xAxisBtns">
-            <button data-axis="time" class="axis-btn active">Eixo: Tempo</button>
-            <button data-axis="distance" class="axis-btn">Eixo: Distância</button>
-          </div>
-          <div style="position:relative;height:320px;">
-            <canvas id="mainChart"></canvas>
-          </div>
-          <p style="font-family:var(--font-m);font-size:.72rem;color:var(--muted);margin-top:.82rem;text-align:center;">Scroll/pinch para zoom · Clique na legenda para mostrar/ocultar</p>
-        </div>
       </div>
     </section>
   </div><!-- /uploadTab -->
