@@ -1440,16 +1440,7 @@ function tlUpdate(value) {
     if (positions.length > 0) {
       const lat = positions.reduce((s, p) => s + p[0], 0) / positions.length;
       const lon = positions.reduce((s, p) => s + p[1], 0) / positions.length;
-      const center = [lat, lon];
-
-      // Durante a animação automática (raf ativo) usa setView sem animação
-      // para evitar conflito entre o raf e a animação interna do Leaflet.
-      // Ao arrastar o scrubber manualmente (raf inativo) usa panTo animado.
-      if (tl.raf) {
-        state.leafletMap.setView(center, state.leafletMap.getZoom(), { animate: false });
-      } else {
-        state.leafletMap.panTo(center, { animate: true, duration: 0.25 });
-      }
+      state.leafletMap.panTo([lat, lon], { animate: false, noMoveStart: true });
     }
   }
 }
