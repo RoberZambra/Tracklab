@@ -1503,8 +1503,8 @@ function initTimeline(scrubData) {
   ));
   if (maxSec <= 0) return;
 
-  // 1× percorre o scrubber em ~120s reais | 2×=60s | 5×=24s
-  const baseSpeed = 1000 / 120;
+  // 1× percorre o scrubber em ~240s reais | 2×=120s | 5×=48s
+  const baseSpeed = 1000 / 240;
 
   // Calcula velocidade máxima entre todas as atividades (para escala do velocímetro)
   let maxSpeed = 0;
