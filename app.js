@@ -1960,9 +1960,9 @@ function initApp() {
       return;
     }
     // Map layer switcher
-    const layerBtn = e.target.closest('.map-layer-btn:not(#map3dBtn)');
+    const layerBtn = e.target.closest('.map-layer-btn[data-layer]');
     if (layerBtn && state.leafletMap) {
-      document.querySelectorAll('.map-layer-btn:not(#map3dBtn)').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.map-layer-btn[data-layer]').forEach(b => b.classList.remove('active'));
       layerBtn.classList.add('active');
       setMapLayer(layerBtn.dataset.layer);
     }
