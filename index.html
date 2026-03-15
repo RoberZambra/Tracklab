@@ -183,6 +183,7 @@
     .map-layer-btn.active{background:var(--brand-bg);border-color:rgba(0,71,255,.35);color:var(--brand);}
     #map3dBtn.active{background:rgba(234,88,12,.1);border-color:rgba(234,88,12,.4);color:#ea580c;}
     #mapFollowBtn.active{background:rgba(10,138,92,.12);border-color:rgba(10,138,92,.45);color:#0a8a5c;}
+    #tlSyncBtn.active{background:rgba(10,138,92,.12);border-color:rgba(10,138,92,.45);color:#0a8a5c;}
     .leaflet-container{font-family:var(--font-m)!important;}
     .leaflet-control-zoom a{background:var(--bg2)!important;border-color:var(--border)!important;color:var(--text2)!important;}
     .leaflet-control-zoom a:hover{background:var(--bg3)!important;color:var(--text)!important;}
@@ -572,6 +573,12 @@
               <button class="speed-chip" data-speed="2">2×</button>
               <button class="speed-chip" data-speed="5">5×</button>
             </div>
+            <div style="width:1px;height:16px;background:var(--border);margin:0 .1rem;flex-shrink:0;"></div>
+            <button id="tlSyncBtn" onclick="tlToggleSyncMode()" title="Sincronizar pelo horário real do relógio"
+              style="display:inline-flex;align-items:center;gap:.3rem;font-family:var(--font-m);font-size:.72rem;font-weight:600;padding:.22rem .55rem;border-radius:5px;border:1.5px solid var(--border);background:var(--bg3);color:var(--muted);cursor:pointer;transition:all .15s;white-space:nowrap;flex-shrink:0;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Hora real
+            </button>
             <div style="flex:1;"></div>
             <span style="font-family:var(--font-m);font-size:.8rem;color:var(--text2);white-space:nowrap;">
               <span id="timelineLabel">00:00</span><span style="opacity:.3;margin:0 .2rem;">/</span><span id="timelineLabelEnd" style="color:var(--muted);">—</span>
@@ -832,7 +839,18 @@ function loadHistorySession(id){
 
   toast(`${s.activities.length} atividade(s) carregada(s)`, 'ok');
 }
-function encodeChallenge(s){try{return btoa(unescape(encodeURIComponent(JSON.stringify({v:1,from:currentUser?.name||'Atleta',created:Date.now(),expires:Date.now()+7*24*3600*1000,activities:s.activities.map(a=>({filename:a.filename,label:a.label,color:a.color,summary:a.summary,coords:a.coords?a.coords.filter((_,i)=>i%5===0):[]}))}))));}catch{return null;}}
+function encodeChallenge(s){try{
+  // Sub-amostra pontos para caber no URL (máx ~400 pts por atividade)
+  function slimPts(pts){
+    if(!pts||!pts.length)return[];
+    const step=Math.max(1,Math.floor(pts.length/400));
+    return pts.filter((_,i)=>i%step===0||i===pts.length-1).map(p=>({
+      elapsedSec:p.elapsedSec,distanceM:p.distanceM,
+      lat:p.lat,lon:p.lon,altitude:p.altitude,
+      heartRate:p.heartRate,speed:p.speed,power:p.power
+    }));
+  }
+  return btoa(unescape(encodeURIComponent(JSON.stringify({v:2,from:currentUser?.name||'Atleta',created:Date.now(),expires:Date.now()+7*24*3600*1000,activities:s.activities.map(a=>({filename:a.filename,label:a.label,color:a.color,summary:a.summary,startTime:a.startTime instanceof Date?a.startTime.toISOString():a.startTime||null,coords:a.coords?a.coords.filter((_,i)=>i%5===0):[],points:slimPts(a.points||[])}))}))));}catch{return null;}}
 function decodeChallenge(enc){try{return JSON.parse(decodeURIComponent(escape(atob(enc))));}catch{return null;}}
 function buildShareUrl(enc){return`${window.location.href.split('#')[0]}#challenge=${enc}`;}
 let _sharingSessionId=null;
@@ -842,7 +860,7 @@ function copyShareLink(){navigator.clipboard.writeText(document.getElementById('
 function shareViaWhatsApp(){const link=document.getElementById('shareLink').value;const name=currentUser?.name.split(' ')[0]||'alguém';window.open(`https://wa.me/?text=${encodeURIComponent(`⚔️ *Desafio Endurance!*\n${name} te desafia!\n${link}`)}`,'_blank');}
 function shareViaNative(){const link=document.getElementById('shareLink').value;if(navigator.share){navigator.share({title:'⚔️ Desafio Endurance!',url:link}).catch(()=>{});}else{copyShareLink();toast('Link copiado!','ok');}}
 function checkIncomingChallenge(){const hash=window.location.hash;if(!hash.startsWith('#challenge='))return;const payload=decodeChallenge(hash.slice('#challenge='.length));if(!payload)return;if(payload.expires&&Date.now()>payload.expires){toast('Link de desafio expirou.','warn');window.location.hash='';return;}window._incomingChallenge=payload;const banner=document.getElementById('challengeBanner'),nameEl=document.getElementById('challengerName');if(banner&&nameEl){nameEl.textContent=payload.from?`de ${payload.from}`:'';banner.classList.add('visible');}if(typeof switchTab==='function')switchTab('history');}
-function acceptChallenge(){if(!window._incomingChallenge)return;const payload=window._incomingChallenge;if(window.state){const COLS=['#e03a1e','#3d8ef0','#d4a017','#3da870','#a78bfa'];window.state.activities=payload.activities.map((a,i)=>({...a,id:Math.random().toString(36).slice(2,9),points:[],color:COLS[i%COLS.length],index:i,_fromChallenge:true}));}history.replaceState(null,'',window.location.pathname+window.location.search);document.getElementById('challengeBanner').classList.remove('visible');switchTab('upload');toast(`Treino de ${payload.from} carregado! Faça upload do seu.`,'ok');const fileList=document.getElementById('fileList'),compareBtn=document.getElementById('compareBtn');if(fileList&&compareBtn){fileList.classList.remove('hidden');fileList.style.display='grid';fileList.innerHTML=payload.activities.map((a,i)=>{const c=['#e03a1e','#3d8ef0','#d4a017','#3da870'][i%4];return`<div class="file-card" style="border-color:rgba(61,142,240,.25);"><div class="file-dot" style="background:${c}"></div><div class="file-card-info"><div class="name">${a.filename}</div><div class="size" style="color:var(--blue);">⚔️ Desafio de ${payload.from}</div></div></div>`;}).join('');compareBtn.classList.remove('hidden');compareBtn.textContent='Carregar meu treino e comparar →';}window._incomingChallenge=null;}
+function acceptChallenge(){if(!window._incomingChallenge)return;const payload=window._incomingChallenge;if(window.state){const COLS=['#e03a1e','#3d8ef0','#d4a017','#3da870','#a78bfa'];window.state.activities=payload.activities.map((a,i)=>({...a,id:Math.random().toString(36).slice(2,9),points:(a.points||[]).map(p=>({...p})),coords:a.coords||[],startTime:a.startTime?new Date(a.startTime):null,color:COLS[i%COLS.length],index:i,_fromChallenge:true}));}history.replaceState(null,'',window.location.pathname+window.location.search);document.getElementById('challengeBanner').classList.remove('visible');switchTab('upload');toast(`Treino de ${payload.from} carregado! Faça upload do seu.`,'ok');const fileList=document.getElementById('fileList'),compareBtn=document.getElementById('compareBtn');if(fileList&&compareBtn){fileList.classList.remove('hidden');fileList.style.display='grid';fileList.innerHTML=payload.activities.map((a,i)=>{const c=COLS[i%COLS.length];return`<div class="file-card" style="border-color:rgba(61,142,240,.25);"><div class="file-dot" style="background:${c}"></div><div class="file-card-info"><div class="name">${a.filename}</div><div class="size" style="color:var(--blue);">⚔️ Desafio de ${payload.from}</div></div></div>`;}).join('');compareBtn.classList.remove('hidden');compareBtn.textContent='Carregar meu treino e comparar →';}window._incomingChallenge=null;}
 document.addEventListener('DOMContentLoaded',()=>{const saved=localStorage.getItem(AUTH_KEY);if(saved){try{currentUser=JSON.parse(saved);enterApp();setTimeout(checkIncomingChallenge,300);}catch{}}document.getElementById('loginPass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});document.getElementById('loginEmail').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('loginPass').focus();});});
 </script>
 

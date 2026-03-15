@@ -29,6 +29,7 @@ const state = {
   currentAxis: 'time', // Eixo X: 'time' | 'distance'
   chart: null,         // Instância do Chart.js
   leafletMap: null,    // Instância do Leaflet
+  syncMode: 'elapsed', // 'elapsed' = duração relativa | 'wallclock' = hora real do dia
 };
 
 // Métricas disponíveis com label e unidade
@@ -472,9 +473,13 @@ async function runComparison() {
   challengerActivities.forEach((a, i) => {
     state.activities.push({
       ...a,
-      color: ACTIVITY_COLORS[(offset + i) % ACTIVITY_COLORS.length],
-      index: offset + i,
+      color:          ACTIVITY_COLORS[(offset + i) % ACTIVITY_COLORS.length],
+      index:          offset + i,
       _fromChallenge: false,
+      // Garante que startTime seja sempre um objeto Date
+      startTime: a.startTime instanceof Date
+        ? a.startTime
+        : (a.startTime ? new Date(a.startTime) : null),
     });
   });
 
@@ -769,15 +774,16 @@ function fmtPace(secPerKm) {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
+/** Formata seg/km como "m:ss" — alias público para compatibilidade */
 let _splitsActiveIdx = 0;
 
 function renderSplits() {
-  const panel = document.getElementById('splitsPanel');
-  const tabs  = document.getElementById('splitsActivityTabs');
+  const panel   = document.getElementById('splitsPanel');
+  const tabs    = document.getElementById('splitsActivityTabs');
   const content = document.getElementById('splitsContent');
   if (!panel || !tabs || !content) return;
 
-  // Only activities that have distance data
+  // Somente atividades com dados de distância
   const eligible = state.activities.filter(a =>
     a.points && a.points.some(p => p.distanceM != null && p.distanceM > 100)
   );
@@ -785,21 +791,133 @@ function renderSplits() {
   if (!eligible.length) { panel.classList.add('hidden'); return; }
   panel.classList.remove('hidden');
 
-  // Clamp active index
-  if (_splitsActiveIdx >= eligible.length) _splitsActiveIdx = 0;
-
-  // Build activity selector tabs
+  // ── Modo comparativo (2+ atividades) ────────────────────────────
   if (eligible.length > 1) {
-    tabs.innerHTML = eligible.map((act, i) => `
-      <button class="split-activity-btn${i === _splitsActiveIdx ? ' active' : ''}"
-        style="--act-color:${act.color}"
-        onclick="_splitsActiveIdx=${i};renderSplits();">
-        <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${act.color};margin-right:.3rem;vertical-align:middle;"></span>
-        ${act.filename.replace(/\.(tcx|gpx)$/i, '').slice(0, 18)}
-      </button>`).join('');
-  } else {
-    tabs.innerHTML = '';
+    tabs.innerHTML = ''; // sem tabs individuais no modo comparativo
+
+    // Calcula splits de todas as atividades
+    const allSplits = eligible.map(act => ({
+      act,
+      splits: computeSplits(act),
+    }));
+
+    // Máximo de KMs entre todas as atividades
+    const maxKm = Math.max(...allSplits.map(d => d.splits.length));
+    if (!maxKm) {
+      content.innerHTML = '<div style="font-family:var(--font-m);font-size:.8rem;color:var(--muted);padding:.5rem 0;">Dados insuficientes para calcular splits.</div>';
+      return;
+    }
+
+    // Flags de colunas: presentes em QUALQUER atividade
+    const hasHR   = allSplits.some(d => d.splits.some(s => s.avgHR != null));
+    const hasElev = allSplits.some(d => d.splits.some(s => s.elevGain != null));
+
+    // Escala global de pace (exclui outliers > 20 min/km)
+    const allPaces = allSplits.flatMap(d =>
+      d.splits.filter(s => s.paceSecPerKm && s.paceSecPerKm < 1200).map(s => s.paceSecPerKm)
+    );
+    const globalMax   = allPaces.length ? Math.max(...allPaces) : 600;
+    const globalMin   = allPaces.length ? Math.min(...allPaces) : 300;
+    const globalRange = globalMax - globalMin || 1;
+
+    // Cabeçalho da tabela — legenda de cores à direita do título (já está no panel-hd)
+    let html = `<table class="splits-table">
+      <thead>
+        <tr>
+          <th>KM</th>
+          <th class="col-pace" colspan="${eligible.length}">Pace</th>
+          <th>Tempo</th>
+          ${hasElev ? '<th>Elev</th>' : ''}
+          ${hasHR   ? '<th>FC</th>'   : ''}
+        </tr>
+      </thead>
+      <tbody>`;
+
+    for (let km = 1; km <= maxKm; km++) {
+      // Separador visual de grupo a cada km
+      const isFirstRow = km === 1;
+
+      eligible.forEach((act, ai) => {
+        const d = allSplits[ai];
+        const s = d.splits.find(sp => sp.km === km);
+
+        const isFirstActivity = ai === 0;
+        const isLastActivity  = ai === eligible.length - 1;
+
+        // Célula do número do km — só na primeira linha do grupo, rowspan
+        const kmCell = isFirstActivity
+          ? `<td rowspan="${eligible.length}" style="vertical-align:middle;font-family:var(--font-d);font-weight:700;font-size:.88rem;color:var(--muted);text-align:center;border-bottom:${isLastActivity ? '' : 'none'};padding-top:${isFirstRow ? '' : '.55rem'};">${s ? (s.partial ? `<span style="opacity:.6;font-size:.7rem;">${s.label}</span>` : s.label) : km}</td>`
+          : '';
+
+        if (!s) {
+          // Esta atividade não tem este km — linha vazia
+          html += `<tr style="border-bottom:${isLastActivity ? '1px solid var(--border2)' : 'none'};">
+            ${kmCell}
+            <td colspan="${eligible.length}" style="border-bottom:none;"></td>
+            <td style="border-bottom:none;"><span class="split-val-muted">—</span></td>
+            ${hasElev ? `<td style="border-bottom:none;"><span class="split-val-muted">—</span></td>` : ''}
+            ${hasHR   ? `<td style="border-bottom:none;"><span class="split-val-muted">—</span></td>` : ''}
+          </tr>`;
+          return;
+        }
+
+        const barPct = s.paceSecPerKm && s.paceSecPerKm < 1200
+          ? Math.min(100, Math.max(6, Math.round(((s.paceSecPerKm - globalMin) / globalRange) * 100)))
+          : 100;
+
+        const elevTxt = s.elevGain != null
+          ? `<span class="split-val-num">${s.elevGain > 0 ? '+' : ''}${s.elevGain}</span><span class="split-val-muted"> m</span>`
+          : '<span class="split-val-muted">—</span>';
+
+        const hrTxt = s.avgHR
+          ? `<span class="split-val-num">${s.avgHR}</span>`
+          : '<span class="split-val-muted">—</span>';
+
+        // Sublinha só na última atividade do grupo (fecha o bloco do km)
+        const rowBorder = isLastActivity
+          ? 'border-bottom:1px solid var(--border2);'
+          : 'border-bottom:none;';
+
+        // Pequeno padding superior na primeira atividade de cada grupo (exceto o primeiro)
+        const rowPadTop = isFirstActivity && !isFirstRow ? 'padding-top:.42rem;' : '';
+
+        html += `<tr style="${rowBorder}">
+          ${kmCell}
+          <td style="padding:${isFirstActivity && !isFirstRow ? '.42rem' : '.28rem'} .6rem .28rem;border-bottom:none;">
+            <div class="split-pace-bar-wrap">
+              <span class="split-pace-val" style="color:${act.color};min-width:42px;">${fmtPace(s.paceSecPerKm)}</span>
+              <div style="display:flex;align-items:center;gap:4px;flex:1;">
+                <div style="width:7px;height:7px;border-radius:50%;background:${act.color};flex-shrink:0;opacity:.8;"></div>
+                <div class="split-bar-track" style="flex:1;">
+                  <div class="split-bar-fill" style="background:${act.color};width:0;" data-target="${barPct}%"></div>
+                </div>
+              </div>
+            </div>
+          </td>
+          <td style="${rowPadTop}border-bottom:none;"><span class="split-val-num">${secondsToHMS(s.durationSec)}</span></td>
+          ${hasElev ? `<td style="${rowPadTop}border-bottom:none;">${elevTxt}</td>` : ''}
+          ${hasHR   ? `<td style="${rowPadTop}border-bottom:none;">${hrTxt}</td>`   : ''}
+        </tr>`;
+      });
+    }
+
+    html += '</tbody></table>';
+    content.innerHTML = html;
+
+    // Anima as barras
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        content.querySelectorAll('.split-bar-fill').forEach(bar => {
+          bar.style.width = bar.dataset.target;
+        });
+      });
+    });
+    return;
   }
+
+  // ── Modo individual (1 atividade) — comportamento original ───────
+  if (_splitsActiveIdx >= eligible.length) _splitsActiveIdx = 0;
+  tabs.innerHTML = '';
 
   const act    = eligible[_splitsActiveIdx];
   const splits = computeSplits(act);
@@ -809,16 +927,13 @@ function renderSplits() {
     return;
   }
 
-  const hasPace = splits.some(s => s.paceSecPerKm != null);
   const hasHR   = splits.some(s => s.avgHR != null);
   const hasElev = splits.some(s => s.elevGain != null);
 
-  // Max pace for bar scaling (exclude outliers > 20min/km)
   const validPaces = splits.filter(s => s.paceSecPerKm && s.paceSecPerKm < 1200).map(s => s.paceSecPerKm);
   const maxPace    = validPaces.length ? Math.max(...validPaces) : 600;
   const minPace    = validPaces.length ? Math.min(...validPaces) : 300;
   const paceRange  = maxPace - minPace || 1;
-
   const color = act.color;
 
   let html = `<table class="splits-table">
@@ -834,11 +949,9 @@ function renderSplits() {
     <tbody>`;
 
   splits.forEach(s => {
-    const barW = s.paceSecPerKm && s.paceSecPerKm < 1200
-      ? Math.round(((s.paceSecPerKm - minPace) / paceRange) * 100)
+    const barPct = s.paceSecPerKm && s.paceSecPerKm < 1200
+      ? Math.min(100, Math.max(8, Math.round(((s.paceSecPerKm - minPace) / paceRange) * 100)))
       : 100;
-    // Clamp bar between 8% and 100%
-    const barPct = Math.min(100, Math.max(8, barW));
 
     const elevTxt = s.elevGain != null
       ? `<span class="split-val-num">${s.elevGain > 0 ? '+' : ''}${s.elevGain}</span><span class="split-val-muted"> m</span>`
@@ -867,7 +980,6 @@ function renderSplits() {
   html += '</tbody></table>';
   content.innerHTML = html;
 
-  // Animate bars
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       content.querySelectorAll('.split-bar-fill').forEach(bar => {
@@ -1108,6 +1220,14 @@ function buildMap() {
   }
 
   setTimeout(() => map.invalidateSize(), 100);
+
+  // Auto-ativa wallclock quando ≥2 atividades têm timestamps reais no mesmo dia UTC
+  // → permite comparar "quem estava na frente às HH:MM?" sem ajuste manual
+  const _validTimes = scrubData.filter(d => d.act.startTime instanceof Date && !isNaN(d.act.startTime));
+  if (_validTimes.length >= 2) {
+    const _days = new Set(_validTimes.map(d => d.act.startTime.toISOString().slice(0, 10)));
+    if (_days.size === 1) state.syncMode = 'wallclock';
+  }
 
   // Pass scrubData to the timeline controller
   initTimeline(scrubData);
@@ -1368,9 +1488,12 @@ function speedoUpdateAll(scrubData, sec) {
     if (!d.gpsPoints.some(p => p.speed > 0)) return;
     const widget = container.querySelector(`.speedo-widget[data-act-id="${d.act.id}"]`);
     if (!widget) return;
-    const actSec = Math.min(sec, d.gpsPoints[d.gpsPoints.length - 1].elapsedSec);
-    const pt     = d.gpsPoints[tlFindIdx(d.gpsPoints, actSec)];
-    const speed  = (pt && pt.speed > 0) ? pt.speed : 0;
+    const actSec = Math.min(
+      Math.max(sec - (d.startOffset || 0), 0),
+      d.gpsPoints[d.gpsPoints.length - 1].elapsedSec
+    );
+    const pt    = d.gpsPoints[tlFindIdx(d.gpsPoints, actSec)];
+    const speed = (pt && pt.speed > 0) ? pt.speed : 0;
     speedoUpdateWidget(widget, speed);
   });
 }
@@ -1405,13 +1528,30 @@ function tlUpdate(value) {
   const labelEl   = document.getElementById('timelineLabel');
   if (scrubEl)  scrubEl.value = value;
   if (fillEl)   fillEl.style.width = (pct * 100) + '%';
-  if (labelEl)  labelEl.textContent = secondsToHMS(sec);
+  if (labelEl) {
+    labelEl.textContent = (state.syncMode === 'wallclock' && tl.hasStartTimes)
+      ? tlFmtWallclock(tl.epochMin, sec)
+      : secondsToHMS(sec);
+  }
 
   tl.scrubData.forEach(d => {
     if (!d.gpsPoints.length) return;
-    const actSec = Math.min(sec, d.gpsPoints[d.gpsPoints.length - 1].elapsedSec);
+
+    // actSec: tempo relativo dentro desta atividade, descontando o offset de início
+    const actSec = Math.min(
+      Math.max(sec - (d.startOffset || 0), 0),
+      d.gpsPoints[d.gpsPoints.length - 1].elapsedSec
+    );
+
     const pos = tlInterp(d.gpsPoints, actSec);
     if (pos) d.marker.setLatLng(pos);
+
+    // Oculta o marcador se a atividade ainda não começou (modo wallclock)
+    if (state.syncMode === 'wallclock' && d.startOffset > 0 && sec < d.startOffset) {
+      d.marker.setOpacity(0);
+    } else {
+      d.marker.setOpacity(1);
+    }
 
     const pt = d.gpsPoints[tlFindIdx(d.gpsPoints, actSec)];
     const el = document.getElementById('scrub-vals-' + d.act.id);
@@ -1421,18 +1561,25 @@ function tlUpdate(value) {
     if (pt.heartRate)                  p.push(`<span>♥ ${pt.heartRate}<small style="opacity:.5"> bpm</small></span>`);
     if (pt.speed > 0.3)                p.push(`<span>⚡ ${pt.speed.toFixed(1)}<small style="opacity:.5"> km/h</small></span>`);
     if (pt.altitude != null)           p.push(`<span>⛰ ${Math.round(pt.altitude)}<small style="opacity:.5"> m</small></span>`);
+    // Exibe horário real se disponível
+    if (state.syncMode === 'wallclock' && tl.hasStartTimes && d.act.startTime) {
+      const realMs  = d.act.startTime.getTime() + actSec * 1000;
+      const realHMS = new Date(realMs).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'UTC' });
+      p.push(`<span style="opacity:.55">🕐 ${realHMS}</span>`);
+    }
     el.innerHTML = p.join('') || '<span style="opacity:.4">—</span>';
   });
 
-  // Atualiza todos os velocímetros
   speedoUpdateAll(tl.scrubData, sec);
 
-  // Modo "Seguir": centraliza o mapa na posição atual
   if (state.mapFollow && state.leafletMap && tl.scrubData.length > 0) {
     const positions = [];
     tl.scrubData.forEach(d => {
       if (!d.gpsPoints.length) return;
-      const actSec = Math.min(sec, d.gpsPoints[d.gpsPoints.length - 1].elapsedSec);
+      const actSec = Math.min(
+        Math.max(sec - (d.startOffset || 0), 0),
+        d.gpsPoints[d.gpsPoints.length - 1].elapsedSec
+      );
       const pos = tlInterp(d.gpsPoints, actSec);
       if (pos) positions.push(pos);
     });
@@ -1498,37 +1645,74 @@ function tlTogglePlay() {
 function initTimeline(scrubData) {
   tlStop();
 
-  const maxSec = Math.max(...scrubData.map(d =>
-    d.gpsPoints.length ? d.gpsPoints[d.gpsPoints.length - 1].elapsedSec : 0
-  ));
+  // ── Calcula offsets por modo de sincronização ──────────────────────
+  // elapsed   → todas as atividades partem do segundo 0 (comportamento original)
+  // wallclock → cada atividade é deslocada pelo delta entre seu startTime e
+  //             o startTime mais antigo do conjunto. O scrubber representa
+  //             a janela de tempo real (hora do dia).
+
+  const hasStartTimes = scrubData.every(d => d.act.startTime instanceof Date && !isNaN(d.act.startTime));
+
+  // Epoch mínimo (ms) entre todas as atividades — usado no modo wallclock
+  const epochMin = hasStartTimes
+    ? Math.min(...scrubData.map(d => d.act.startTime.getTime()))
+    : 0;
+
+  // startOffset (s) de cada atividade em relação à mais antiga
+  scrubData.forEach(d => {
+    if (state.syncMode === 'wallclock' && hasStartTimes) {
+      d.startOffset = (d.act.startTime.getTime() - epochMin) / 1000;
+    } else {
+      d.startOffset = 0;
+    }
+  });
+
+  // maxSec considera o offset + duração de cada atividade
+  const maxSec = Math.max(...scrubData.map(d => {
+    const dur = d.gpsPoints.length ? d.gpsPoints[d.gpsPoints.length - 1].elapsedSec : 0;
+    return d.startOffset + dur;
+  }));
   if (maxSec <= 0) return;
 
   // 1× percorre o scrubber em ~240s reais | 2×=120s | 5×=48s
   const baseSpeed = 1000 / 240;
 
-  // Calcula velocidade máxima entre todas as atividades (para escala do velocímetro)
+  // Velocidade máxima para escala do velocímetro
   let maxSpeed = 0;
   scrubData.forEach(d => {
     d.gpsPoints.forEach(p => {
       if (p.speed && p.speed > maxSpeed) maxSpeed = p.speed;
     });
   });
-  // Arredonda para próximo múltiplo de 10 e garante mínimo de 30 km/h
   maxSpeed = Math.max(Math.ceil(maxSpeed / 10) * 10, 30);
 
-  state.timeline = { scrubData, maxSec, isPlaying: false, speed: baseSpeed, baseSpeed, raf: null, lastTS: null, maxSpeed };
+  state.timeline = {
+    scrubData, maxSec,
+    isPlaying: false, speed: baseSpeed, baseSpeed,
+    raf: null, lastTS: null, maxSpeed,
+    epochMin, hasStartTimes,
+  };
 
+  // Label do fim da timeline
   const labelEnd = document.getElementById('timelineLabelEnd');
-  const statsEl  = document.getElementById('timelineStats');
-  if (labelEnd) labelEnd.textContent = secondsToHMS(maxSec);
+  if (labelEnd) {
+    if (state.syncMode === 'wallclock' && hasStartTimes) {
+      labelEnd.textContent = tlFmtWallclock(epochMin, maxSec);
+    } else {
+      labelEnd.textContent = secondsToHMS(maxSec);
+    }
+  }
 
-  // Constrói um velocímetro por atividade com dados de velocidade
+  // Atualiza visual do botão de sincronização
+  tlSyncBtnUpdate();
+
   speedoBuildAll(scrubData, maxSpeed);
 
   document.querySelectorAll('.speed-chip').forEach(c =>
     c.classList.toggle('active', c.dataset.speed === '1')
   );
 
+  const statsEl = document.getElementById('timelineStats');
   if (statsEl) statsEl.innerHTML = scrubData.map(d => `
     <div class="timeline-stat-chip">
       <div class="timeline-stat-dot" style="background:${d.act.color}"></div>
@@ -1539,10 +1723,75 @@ function initTimeline(scrubData) {
   tlUpdate(0);
 }
 
+/** Formata hora real do dia a partir do epoch mínimo + segundos decorridos */
+function tlFmtWallclock(epochMin, sec) {
+  const d = new Date(epochMin + sec * 1000);
+  return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'UTC' });
+}
+
+/** Atualiza aparência do botão de modo de sincronização */
+function tlSyncBtnUpdate() {
+  const btn = document.getElementById('tlSyncBtn');
+  if (!btn) return;
+  const isWall = state.syncMode === 'wallclock';
+  btn.classList.toggle('active', isWall);
+  btn.title = isWall ? 'Sincronizado por hora real — clique para voltar ao modo duração' : 'Sincronizar pelo horário real do relógio';
+  btn.innerHTML = isWall
+    ? `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/><line x1="2" y1="2" x2="22" y2="22" stroke-width="2"/></svg> Hora real`
+    : `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Hora real`;
+}
+
+/** Alterna entre modo elapsed e wallclock e reconstrói a timeline */
+function tlToggleSyncMode() {
+  state.syncMode = state.syncMode === 'wallclock' ? 'elapsed' : 'wallclock';
+  // Reconstrói a timeline com os mesmos scrubData mas offsets recalculados
+  if (state.timeline) {
+    initTimeline(state.timeline.scrubData);
+  }
+}
+window.tlToggleSyncMode = tlToggleSyncMode;
+
 /** Cartões de resumo com ícones, cores e valores por atividade */
 function renderSummaryCards() {
   const container = document.getElementById('summaryCards');
   container.innerHTML = '';
+
+  // ── Card de data/hora de início ──────────────────────────────────
+  const hasAnyStartTime = state.activities.some(a => a.startTime instanceof Date && !isNaN(a.startTime));
+  if (hasAnyStartTime) {
+    const startCard = document.createElement('div');
+    startCard.className = 'summary-card';
+    startCard.style.cssText = '--card-accent: #0047ff;';
+
+    const valRows = state.activities.map(act => {
+      let dateLine = '—', timeLine = '';
+      if (act.startTime instanceof Date && !isNaN(act.startTime)) {
+        dateLine = act.startTime.toLocaleDateString('pt-BR', {
+          day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC'
+        });
+        timeLine = act.startTime.toLocaleTimeString('pt-BR', {
+          hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'UTC'
+        });
+      }
+      return `
+        <div class="summary-act-row">
+          <span class="summary-act-dot" style="background:${act.color};box-shadow:0 0 6px ${act.color}55;"></span>
+          <span class="summary-act-name">${act.filename.replace(/\.(tcx|gpx)$/i,'')}</span>
+          <span class="summary-act-val" style="color:${act.color};font-size:.82rem;line-height:1.3;text-align:right;">
+            ${dateLine}${timeLine ? `<span class="unit" style="display:block;font-size:.7rem;opacity:.65;">${timeLine} UTC</span>` : ''}
+          </span>
+        </div>`;
+    }).join('');
+
+    startCard.innerHTML = `
+      <div class="summary-card-header">
+        <span class="summary-icon" style="color:#0047ff;">📅</span>
+        <span class="summary-label">Início</span>
+      </div>
+      <div class="summary-act-list">${valRows}</div>
+    `;
+    container.appendChild(startCard);
+  }
 
   const fields = [
     { key: 'totalSec',   label: 'Duração',       unit: '',     fmt: v => secondsToHMS(v),             icon: '⏱', accent: '#3d8ef0' },
@@ -1995,6 +2244,10 @@ function initApp() {
       ...a,
       color: ACTIVITY_COLORS[i % ACTIVITY_COLORS.length],
       index: i,
+      // Re-hidrata startTime: JSON.parse devolve string ISO, precisa de Date
+      startTime: a.startTime instanceof Date
+        ? a.startTime
+        : (a.startTime ? new Date(a.startTime) : null),
     }));
     toast(`${saved.length} atividade(s) restaurada(s) do cache`, 'ok');
     renderDashboard();
