@@ -1014,6 +1014,24 @@ function renderDashboard() {
   buildMetricButtons();
   buildChart();
   buildMap();
+
+  // Mostra painel de IA e reseta estado
+  const aiPanel = document.getElementById('aiPanel');
+  if (aiPanel) {
+    aiPanel.classList.remove('hidden');
+    const aiBody = document.getElementById('aiBody');
+    const aiBtn  = document.getElementById('aiAnalyzeBtn');
+    if (aiBody) aiBody.innerHTML = `
+      <div class="ai-empty" id="aiEmpty">
+        <div class="ai-empty-icon">✦</div>
+        <div style="font-family:var(--font-d);font-weight:700;font-size:1rem;color:var(--text);margin-bottom:.32rem;">Análise inteligente de treinos</div>
+        <div style="font-family:var(--font-m);font-size:.82rem;color:var(--muted);">Clique em <strong>Analisar treinos</strong> para gerar insights personalizados com o Gemini AI sobre seu desempenho${!isSingle ? ', comparação de atividades' : ''}, pontos fortes e sugestões de melhoria.</div>
+      </div>`;
+    if (aiBtn) {
+      aiBtn.disabled = false;
+      aiBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg> Analisar treinos`;
+    }
+  }
 }
 
 // ──────────────────────────────────────────────────────
@@ -2124,6 +2142,8 @@ function clearAll() {
   destroyMap();
   renderFileList();
   showUpload();
+  const aiPanel = document.getElementById('aiPanel');
+  if (aiPanel) aiPanel.classList.add('hidden');
 }
 
 // ──────────────────────────────────────────────────────
@@ -2320,3 +2340,233 @@ window.toggleMapFollow = toggleMapFollow;
 window.state = state;
 window.renderDashboard = renderDashboard;
 window.ACTIVITY_COLORS = ACTIVITY_COLORS;
+// ══════════════════════════════════════════════════════════
+// INTEGRAÇÃO GEMINI AI — Análise e comparação de treinos
+// ══════════════════════════════════════════════════════════
+
+const GEMINI_API_KEY = 'AIzaSyAVoNlc5HSCmI5mLyZ7EILgTilnLNwOGLE';
+
+// Modelos em ordem de preferência — tenta o próximo se o anterior atingir cota
+const GEMINI_MODELS = [
+  'gemini-2.5-flash-lite',
+  'gemini-2.5-flash',
+  'gemini-2.5-pro',
+  'gemini-2.0-flash',
+  'gemini-2.0-flash-lite',
+];
+
+function geminiEndpoint(model) {
+  return `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+}
+
+/** Verifica se o erro deve acionar fallback para o próximo modelo */
+function isQuotaError(errMsg) {
+  return /quota|rate.?limit|429|resource.?exhausted|not found|not supported|404|503|unavailable/i.test(errMsg);
+}
+
+/**
+ * Monta o resumo textual de uma atividade para enviar ao Gemini
+ */
+function buildActivitySummaryText(act) {
+  const s = act.summary;
+  const lines = [];
+  lines.push(`• Arquivo: ${act.filename}`);
+  if (act.startTime instanceof Date && !isNaN(act.startTime)) {
+    lines.push(`• Data/Hora: ${act.startTime.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric', timeZone: 'UTC' })} às ${act.startTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })}`);
+  }
+  lines.push(`• Duração: ${secondsToHMS(s.totalSec)}`);
+  lines.push(`• Distância: ${fmtDist(s.totalDistM)}`);
+  if (s.avgSpeed) lines.push(`• Velocidade média: ${s.avgSpeed} km/h`);
+  if (s.avgHR)    lines.push(`• FC média: ${s.avgHR} bpm`);
+  if (s.maxHR)    lines.push(`• FC máxima: ${s.maxHR} bpm`);
+  if (s.elevGain) lines.push(`• Ganho de elevação: ${s.elevGain} m`);
+  if (s.avgPower) lines.push(`• Potência média: ${s.avgPower} W`);
+
+  // Pace médio
+  if (s.avgSpeed && s.avgSpeed > 0) {
+    const secKm = 3600 / s.avgSpeed;
+    const pm = Math.floor(secKm / 60);
+    const ps = Math.floor(secKm % 60);
+    lines.push(`• Pace médio: ${pm}:${String(ps).padStart(2,'0')} min/km`);
+  }
+
+  // Zonas de FC (resumo)
+  if (s.maxHR > 0 && act.points.some(p => p.heartRate > 0)) {
+    const zones = hrZoneDefs(s.maxHR);
+    const pcts  = computeHRZones(act, s.maxHR);
+    const zonesStr = zones.map((z, i) => `${z.label}: ${pcts[i]}%`).join(', ');
+    lines.push(`• Distribuição FC por zonas: ${zonesStr}`);
+  }
+
+  // Splits (até 10 km)
+  const splits = computeSplits(act).slice(0, 10);
+  if (splits.length) {
+    const splitsStr = splits.map(sp =>
+      `km${sp.label}: ${fmtPace(sp.paceSecPerKm)}/km${sp.avgHR ? ` (FC ${sp.avgHR})` : ''}`
+    ).join(', ');
+    lines.push(`• Splits: ${splitsStr}`);
+  }
+
+  return lines.join('\n');
+}
+
+/**
+ * Monta o prompt completo para o Gemini
+ */
+function buildGeminiPrompt() {
+  const acts = state.activities;
+  const isComparison = acts.length > 1;
+  const sport = detectSport(acts.map(a => a.label + ' ' + a.filename).join(' '));
+
+  let prompt = `Você é um coach esportivo especialista em análise de dados de treino. Analise ${isComparison ? 'as seguintes atividades comparativamente' : 'a seguinte atividade'} e forneça insights em português do Brasil.
+
+DADOS ${isComparison ? 'DAS ATIVIDADES' : 'DA ATIVIDADE'}:
+
+`;
+
+  acts.forEach((act, i) => {
+    if (isComparison) prompt += `=== Atividade ${i + 1} ===\n`;
+    prompt += buildActivitySummaryText(act) + '\n\n';
+  });
+
+  if (isComparison) {
+    prompt += `
+ANÁLISE SOLICITADA:
+1. **Comparação Geral**: Compare o desempenho entre as atividades. Qual foi melhor e por quê?
+2. **Ritmo e Eficiência**: Analise a consistência do pace/velocidade e eficiência cardíaca (relação FC × velocidade).
+3. **Zonas de Treino**: Comente sobre a distribuição nas zonas de FC e se o treino foi aeróbico, limiar ou de alta intensidade.
+4. **Pontos Fortes e Fracos**: Identifique o que foi bem e o que pode melhorar em cada atividade.
+5. **Recomendações**: Dê 3 sugestões práticas e específicas para melhorar o desempenho com base nos dados apresentados.
+
+Seja direto, técnico mas acessível. Use dados concretos dos treinos para embasar suas análises.`;
+  } else {
+    prompt += `
+ANÁLISE SOLICITADA:
+1. **Visão Geral**: Avalie a qualidade geral desta sessão de treino.
+2. **Ritmo e Consistência**: Como foi a distribuição de velocidade/pace ao longo do treino? Houve fadiga?
+3. **Resposta Cardíaca**: Analise os dados de FC e o que eles indicam sobre o esforço e condicionamento.
+4. **Zonas de Treino**: Qual foi o perfil de intensidade desta sessão?
+5. **Recomendações**: Dê 3 sugestões específicas para o próximo treino com base nestes dados.
+
+Seja direto, técnico mas acessível. Use dados concretos do treino para embasar a análise.`;
+  }
+
+  return prompt;
+}
+
+/**
+ * Converte markdown simples em HTML para exibição
+ */
+function markdownToHTML(text) {
+  return text
+    // Títulos **Texto**: (negrito com dois-pontos — vira h3)
+    .replace(/\*\*([^*]+)\*\*:/g, '<h3>$1</h3>')
+    // Negrito **texto**
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    // Itálico *texto*
+    .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+    // Listas - item
+    .replace(/^[\-•]\s+(.+)$/gm, '<li>$1</li>')
+    // Agrupa <li> em <ul>
+    .replace(/(<li>.*<\/li>\n?)+/g, m => `<ul>${m}</ul>`)
+    // Números 1. item
+    .replace(/^\d+\.\s+\*\*([^*]+)\*\*:?\s*/gm, '<h3>$1</h3>')
+    .replace(/^\d+\.\s+(.+)$/gm, '<p>$1</p>')
+    // Parágrafos — linhas não marcadas
+    .replace(/^(?!<[hup])(.+)$/gm, '<p>$1</p>')
+    // Espaços duplos entre blocos
+    .replace(/<\/p>\s*<p>/g, '</p><p>')
+    .replace(/<\/ul>\s*<p>/g, '</ul><p>')
+    .replace(/<\/h3>\s*<p>/g, '</h3><p>');
+}
+
+/**
+ * Tenta chamar um modelo Gemini específico. Retorna { text, model } ou lança erro.
+ */
+async function callGeminiModel(model, prompt) {
+  const response = await fetch(geminiEndpoint(model), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.7, maxOutputTokens: 1200 }
+    })
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data?.error?.message || `HTTP ${response.status}`);
+  }
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) throw new Error('Resposta vazia do Gemini.');
+  return { text, model };
+}
+
+/**
+ * Executa a análise Gemini com fallback automático entre modelos
+ */
+async function runAIAnalysis() {
+  if (!state.activities.length) {
+    toast('Carregue atividades antes de analisar', 'warn');
+    return;
+  }
+
+  const btn  = document.getElementById('aiAnalyzeBtn');
+  const body = document.getElementById('aiBody');
+
+  btn.disabled = true;
+  btn.innerHTML = `<div style="width:13px;height:13px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;"></div> Analisando…`;
+
+  body.innerHTML = `
+    <div class="ai-loading">
+      <div class="ai-spinner"></div>
+      <div class="ai-loading-text" id="aiLoadingText">O Gemini está analisando seus treinos…</div>
+      <div style="font-family:var(--font-m);font-size:.72rem;color:var(--muted);opacity:.55;">Isso pode levar alguns segundos</div>
+    </div>`;
+
+  try {
+    const prompt = buildGeminiPrompt();
+    let result = null;
+    let lastErr = null;
+
+    for (const model of GEMINI_MODELS) {
+      try {
+        const loadingText = document.getElementById('aiLoadingText');
+        if (loadingText) loadingText.textContent = `Tentando ${model}…`;
+        result = await callGeminiModel(model, prompt);
+        break; // sucesso — sai do loop
+      } catch (err) {
+        console.warn(`[Gemini] ${model} falhou:`, err.message);
+        lastErr = err;
+        if (!isQuotaError(err.message)) throw err; // erro diferente de cota — não adianta tentar outro modelo
+        // É erro de cota: tenta o próximo modelo
+      }
+    }
+
+    if (!result) throw lastErr || new Error('Todos os modelos Gemini falharam.');
+
+    const htmlContent = markdownToHTML(result.text);
+    const now = new Date().toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+    const modelLabel = result.model.replace('gemini-', 'Gemini ').replace(/-/g, ' ');
+
+    body.innerHTML = `
+      <div class="ai-result">${htmlContent}</div>
+      <div class="ai-meta">
+        <span>✦ Gerado pelo ${modelLabel} · ${now}</span>
+        <button onclick="runAIAnalysis()" style="font-family:var(--font-m);font-size:.72rem;color:#7c3aed;background:none;border:1px solid rgba(124,58,237,.25);border-radius:4px;padding:.18rem .55rem;cursor:pointer;transition:all .15s;" onmouseover="this.style.background='rgba(124,58,237,.07)'" onmouseout="this.style.background='none'">↻ Nova análise</button>
+      </div>`;
+
+  } catch (err) {
+    console.error('[Gemini]', err);
+    body.innerHTML = `
+      <div class="ai-error">
+        <strong>Erro ao contatar o Gemini:</strong> ${err.message}
+        <br><br>
+        <button onclick="runAIAnalysis()" style="font-family:var(--font-m);font-size:.82rem;color:#dc2626;background:none;border:1px solid rgba(220,38,38,.2);border-radius:4px;padding:.28rem .7rem;cursor:pointer;margin-top:.35rem;">↻ Tentar novamente</button>
+      </div>`;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg> Analisar novamente`;
+  }
+}
+
+window.runAIAnalysis = runAIAnalysis;

@@ -304,6 +304,33 @@
     .split-activity-btn.active{border-color:var(--act-color,var(--brand));color:var(--act-color,var(--brand));background:rgba(0,0,0,0.03);}
     #toast{transition:opacity .3s;}
     #toast.visible{opacity:1;}
+
+    /* IA ANALYSIS */
+    #aiPanel{background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--rl);overflow:hidden;box-shadow:var(--shadow);margin-bottom:1rem;border-top:3px solid #7c3aed;}
+    #aiPanel .ai-hd{padding:.82rem 1.2rem;border-bottom:1px solid var(--border2);display:flex;align-items:center;justify-content:space-between;gap:.6rem;flex-wrap:wrap;}
+    .ai-hd-title{font-family:var(--font-d);font-size:.88rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text);display:flex;align-items:center;gap:.45rem;}
+    .ai-analyze-btn{display:inline-flex;align-items:center;gap:.38rem;background:#7c3aed;color:#fff;font-family:var(--font-d);font-weight:700;font-size:.78rem;letter-spacing:.04em;text-transform:uppercase;padding:.42rem 1rem;border:none;border-radius:var(--r);cursor:pointer;transition:all .18s;box-shadow:0 3px 12px rgba(124,58,237,0.35);white-space:nowrap;}
+    .ai-analyze-btn:hover{background:#6d28d9;transform:translateY(-1px);box-shadow:0 5px 18px rgba(124,58,237,0.45);}
+    .ai-analyze-btn:disabled{opacity:.55;cursor:not-allowed;transform:none;}
+    .ai-body{padding:1.1rem 1.2rem;}
+    .ai-empty{text-align:center;padding:2.2rem 1rem;}
+    .ai-empty-icon{width:44px;height:44px;border-radius:10px;background:rgba(124,58,237,.08);border:1.5px solid rgba(124,58,237,.15);display:flex;align-items:center;justify-content:center;margin:0 auto .75rem;font-size:1.2rem;}
+    .ai-loading{display:flex;flex-direction:column;align-items:center;gap:.75rem;padding:2rem 1rem;}
+    .ai-spinner{width:36px;height:36px;border:3px solid rgba(124,58,237,.15);border-top-color:#7c3aed;border-radius:50%;animation:spin .8s linear infinite;}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .ai-loading-text{font-family:var(--font-m);font-size:.85rem;color:var(--muted);}
+    .ai-result{font-family:var(--font-b);font-size:.9rem;color:var(--text2);line-height:1.72;}
+    .ai-result h3{font-family:var(--font-d);font-size:.82rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#7c3aed;margin:1.1rem 0 .38rem;display:flex;align-items:center;gap:.38rem;}
+    .ai-result h3:first-child{margin-top:0;}
+    .ai-result p{margin-bottom:.65rem;color:var(--text2);}
+    .ai-result p:last-child{margin-bottom:0;}
+    .ai-result strong{font-weight:600;color:var(--text);}
+    .ai-result ul{padding-left:1.3rem;margin-bottom:.65rem;}
+    .ai-result ul li{margin-bottom:.32rem;}
+    .ai-result .ai-highlight{display:inline-flex;align-items:center;gap:.3rem;background:rgba(124,58,237,.07);border:1px solid rgba(124,58,237,.18);border-radius:4px;padding:.1rem .45rem;font-family:var(--font-m);font-size:.82rem;color:#7c3aed;font-weight:500;}
+    .ai-badge{display:inline-flex;align-items:center;gap:.25rem;background:rgba(124,58,237,.08);border:1.5px solid rgba(124,58,237,.18);border-radius:4px;padding:.18rem .55rem;font-family:var(--font-d);font-size:.72rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#7c3aed;}
+    .ai-meta{font-family:var(--font-m);font-size:.72rem;color:var(--muted);margin-top:.82rem;padding-top:.82rem;border-top:1px solid var(--border2);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.4rem;}
+    .ai-error{background:rgba(220,38,38,.06);border:1px solid rgba(220,38,38,.2);border-radius:var(--r);padding:.75rem 1rem;font-family:var(--font-m);font-size:.85rem;color:#dc2626;}
   </style>
 </head>
 <body>
@@ -525,6 +552,28 @@
           <div id="splitsActivityTabs" style="display:flex;gap:.3rem;flex-wrap:wrap;margin-left:auto;"></div>
         </div>
         <div id="splitsContent" style="padding:.6rem 1.2rem 1rem;overflow-x:auto;"></div>
+      </div>
+
+      <!-- IA CLAUDE PANEL -->
+      <div id="aiPanel" class="hidden">
+        <div class="ai-hd">
+          <div class="ai-hd-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2.2"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+            Análise com IA — Claude
+            <span class="ai-badge">✦ Claude</span>
+          </div>
+          <button class="ai-analyze-btn" id="aiAnalyzeBtn" onclick="runAIAnalysis()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+            Analisar treinos
+          </button>
+        </div>
+        <div class="ai-body" id="aiBody">
+          <div class="ai-empty" id="aiEmpty">
+            <div class="ai-empty-icon">✦</div>
+            <div style="font-family:var(--font-d);font-weight:700;font-size:1rem;color:var(--text);margin-bottom:.32rem;">Análise inteligente de treinos</div>
+            <div style="font-family:var(--font-m);font-size:.82rem;color:var(--muted);">Clique em <strong>Analisar treinos</strong> para gerar insights personalizados com o Claude AI sobre seu desempenho, comparação de atividades, pontos fortes e sugestões de melhoria.</div>
+          </div>
+        </div>
       </div>
 
       <!-- Map — sempre ao final -->
