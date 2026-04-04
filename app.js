@@ -492,6 +492,16 @@ async function runComparison() {
   saveToLS();
 
   renderDashboard();
+
+  // Salva no histórico imediatamente após comparação bem-sucedida
+  if (window.addToHistory) {
+    window.addToHistory(state.activities);
+  }
+
+  // Dispara análise IA automaticamente
+  if (window.runAIAnalysis) {
+    window.runAIAnalysis();
+  }
 }
 
 // ──────────────────────────────────────────────────────
@@ -2247,9 +2257,6 @@ function initApp() {
   // Botão comparar
   document.getElementById('compareBtn').addEventListener('click', async () => {
     await runComparison();
-    if (window.addToHistory && state.activities.length >= 1) {
-      window.addToHistory(state.activities);
-    }
   });
 
   document.getElementById('backBtn').addEventListener('click', showUpload);
@@ -2455,29 +2462,133 @@ Seja direto, técnico mas acessível. Use dados concretos do treino para embasar
 }
 
 /**
- * Converte markdown simples em HTML para exibição
+ * Mapa de seções: palavra-chave → { tema, ícone }
+ */
+const AI_SECTION_MAP = [
+  { keys: ['geral','visão','overview','comparação','comparacao','resumo','desempenho'], theme: 'blue',   icon: '📊' },
+  { keys: ['ritmo','pace','velocidade','consistência','consistencia','eficiência','eficiencia'], theme: 'green',  icon: '⚡' },
+  { keys: ['cardíaca','cardiaca','fc','cardíaco','cardiaco','coração','coracao','frequência','frequencia'], theme: 'orange', icon: '❤️' },
+  { keys: ['zona','zonas','intensidade','perfil'], theme: 'amber',  icon: '🔥' },
+  { keys: ['recomend','sugestão','sugestao','melhoria','próximo','proximo','dica'], theme: 'violet', icon: '🎯' },
+  { keys: ['ponto','forte','fraco','análise','analise'], theme: 'blue',   icon: '🔍' },
+];
+
+function sectionTheme(title) {
+  const t = title.toLowerCase();
+  for (const s of AI_SECTION_MAP) {
+    if (s.keys.some(k => t.includes(k))) return s;
+  }
+  return { theme: 'blue', icon: '📌' };
+}
+
+/**
+ * Converte markdown do Gemini em HTML rico com seções coloridas
  */
 function markdownToHTML(text) {
-  return text
-    // Títulos **Texto**: (negrito com dois-pontos — vira h3)
-    .replace(/\*\*([^*]+)\*\*:/g, '<h3>$1</h3>')
-    // Negrito **texto**
-    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-    // Itálico *texto*
-    .replace(/\*([^*]+)\*/g, '<em>$1</em>')
-    // Listas - item
-    .replace(/^[\-•]\s+(.+)$/gm, '<li>$1</li>')
-    // Agrupa <li> em <ul>
-    .replace(/(<li>.*<\/li>\n?)+/g, m => `<ul>${m}</ul>`)
-    // Números 1. item
-    .replace(/^\d+\.\s+\*\*([^*]+)\*\*:?\s*/gm, '<h3>$1</h3>')
-    .replace(/^\d+\.\s+(.+)$/gm, '<p>$1</p>')
-    // Parágrafos — linhas não marcadas
-    .replace(/^(?!<[hup])(.+)$/gm, '<p>$1</p>')
-    // Espaços duplos entre blocos
-    .replace(/<\/p>\s*<p>/g, '</p><p>')
-    .replace(/<\/ul>\s*<p>/g, '</ul><p>')
-    .replace(/<\/h3>\s*<p>/g, '</h3><p>');
+  // Normaliza quebras de linha
+  const lines = text.replace(/\r\n/g, '\n').split('\n');
+
+  const sections = [];
+  let currentSection = null;
+  let bodyLines = [];
+
+  function flushSection() {
+    if (currentSection) {
+      currentSection.body = bodyLines.join('\n').trim();
+      sections.push(currentSection);
+    }
+    bodyLines = [];
+    currentSection = null;
+  }
+
+  for (const line of lines) {
+    // Detecta títulos: ## Título, **Título**: ou 1. **Título**
+    const h2 = line.match(/^#{1,3}\s+(.+)/);
+    const bold = line.match(/^\*\*([^*]+?)\*\*:?\s*$/);
+    const numbered = line.match(/^\d+\.\s+\*\*([^*]+?)\*\*:?\s*$/);
+    const numberedPlain = line.match(/^(\d+)\.\s+(?!\*\*)([A-ZÁÉÍÓÚÀÃÕÂÊÎÔÛÇ][^*]{5,})$/);
+
+    const titleMatch = h2 || bold || numbered || numberedPlain;
+    if (titleMatch) {
+      flushSection();
+      const title = (titleMatch[1] || titleMatch[2] || '').trim();
+      const { theme, icon } = sectionTheme(title);
+      currentSection = { title, theme, icon };
+    } else {
+      bodyLines.push(line);
+    }
+  }
+  flushSection();
+
+  // Se não detectou nenhuma seção, cria uma seção genérica com todo o conteúdo
+  if (!sections.length) {
+    sections.push({ title: 'Análise', theme: 'blue', icon: '📊', body: text.trim() });
+  }
+
+  function renderBody(raw) {
+    let html = raw
+      // Negrito
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      // Itálico
+      .replace(/\*([^*]+)\*/g, '<em>$1</em>');
+
+    const bodyLines = html.split('\n');
+    let out = '';
+    let inUl = false;
+    let recItems = [];
+    let inRecs = false;
+
+    for (const line of bodyLines) {
+      const trimmed = line.trim();
+      if (!trimmed) { if (inUl) { out += '</ul>'; inUl = false; } continue; }
+
+      // Item numerado de recomendação: "1. texto"
+      const recMatch = trimmed.match(/^(\d+)\.\s+(.+)/);
+      if (recMatch) {
+        if (inUl) { out += '</ul>'; inUl = false; }
+        recItems.push(recMatch[2]);
+        inRecs = true;
+        continue;
+      }
+
+      // Flush rec items se linha não é numerada
+      if (inRecs && recItems.length) {
+        out += '<div class="ai-rec-wrap">' + recItems.map((r,i) =>
+          `<div class="ai-rec"><div class="ai-rec-num">${i+1}</div><div class="ai-rec-text">${r}</div></div>`
+        ).join('') + '</div>';
+        recItems = [];
+        inRecs = false;
+      }
+
+      // Item de lista
+      if (/^[-•*]\s+/.test(trimmed)) {
+        if (!inUl) { out += '<ul>'; inUl = true; }
+        out += `<li>${trimmed.replace(/^[-•*]\s+/, '')}</li>`;
+        continue;
+      }
+
+      if (inUl) { out += '</ul>'; inUl = false; }
+      out += `<p>${trimmed}</p>`;
+    }
+
+    if (inUl) out += '</ul>';
+    if (inRecs && recItems.length) {
+      out += '<div class="ai-rec-wrap">' + recItems.map((r,i) =>
+        `<div class="ai-rec"><div class="ai-rec-num">${i+1}</div><div class="ai-rec-text">${r}</div></div>`
+      ).join('') + '</div>';
+    }
+    return out;
+  }
+
+  return sections.map(s => `
+    <div class="ai-section" data-t="${s.theme}">
+      <div class="ai-section-hd">
+        <div class="ai-section-icon">${s.icon}</div>
+        <div class="ai-section-title">${s.title}</div>
+      </div>
+      <div class="ai-section-body">${renderBody(s.body)}</div>
+    </div>`
+  ).join('');
 }
 
 /**
@@ -2555,6 +2666,11 @@ async function runAIAnalysis() {
         <button onclick="runAIAnalysis()" style="font-family:var(--font-m);font-size:.72rem;color:#7c3aed;background:none;border:1px solid rgba(124,58,237,.25);border-radius:4px;padding:.18rem .55rem;cursor:pointer;transition:all .15s;" onmouseover="this.style.background='rgba(124,58,237,.07)'" onmouseout="this.style.background='none'">↻ Nova análise</button>
       </div>`;
 
+    // Persiste resultado da análise IA na sessão do histórico
+    if (window.saveAIResultToHistory) {
+      window.saveAIResultToHistory({ text: result.text, model: result.model, generatedAt: new Date().toISOString() });
+    }
+
   } catch (err) {
     console.error('[Gemini]', err);
     body.innerHTML = `
@@ -2570,3 +2686,24 @@ async function runAIAnalysis() {
 }
 
 window.runAIAnalysis = runAIAnalysis;
+
+/**
+ * Restaura análise IA salva no histórico diretamente no painel
+ */
+function restoreAIResult(aiData) {
+  if (!aiData || !aiData.text) return;
+  const body = document.getElementById('aiBody');
+  if (!body) return;
+  const htmlContent = markdownToHTML(aiData.text);
+  const when = aiData.generatedAt
+    ? new Date(aiData.generatedAt).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
+    : '—';
+  const modelLabel = (aiData.model || 'Gemini').replace('gemini-', 'Gemini ').replace(/-/g, ' ');
+  body.innerHTML = `
+    <div class="ai-result">${htmlContent}</div>
+    <div class="ai-meta">
+      <span>✦ ${modelLabel} · ${when} <span style="opacity:.5;font-size:.68rem;">(histórico)</span></span>
+      <button onclick="runAIAnalysis()" style="font-family:var(--font-m);font-size:.72rem;color:#7c3aed;background:none;border:1px solid rgba(124,58,237,.25);border-radius:4px;padding:.18rem .55rem;cursor:pointer;transition:all .15s;" onmouseover="this.style.background='rgba(124,58,237,.07)'" onmouseout="this.style.background='none'">↻ Nova análise</button>
+    </div>`;
+}
+window.restoreAIResult = restoreAIResult;

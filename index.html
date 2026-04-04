@@ -317,19 +317,55 @@
     .ai-empty-icon{width:44px;height:44px;border-radius:10px;background:rgba(124,58,237,.08);border:1.5px solid rgba(124,58,237,.15);display:flex;align-items:center;justify-content:center;margin:0 auto .75rem;font-size:1.2rem;}
     .ai-loading{display:flex;flex-direction:column;align-items:center;gap:.75rem;padding:2rem 1rem;}
     .ai-spinner{width:36px;height:36px;border:3px solid rgba(124,58,237,.15);border-top-color:#7c3aed;border-radius:50%;animation:spin .8s linear infinite;}
-    @keyframes spin{to{transform:rotate(360deg)}}
     .ai-loading-text{font-family:var(--font-m);font-size:.85rem;color:var(--muted);}
-    .ai-result{font-family:var(--font-b);font-size:.9rem;color:var(--text2);line-height:1.72;}
-    .ai-result h3{font-family:var(--font-d);font-size:.82rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#7c3aed;margin:1.1rem 0 .38rem;display:flex;align-items:center;gap:.38rem;}
-    .ai-result h3:first-child{margin-top:0;}
-    .ai-result p{margin-bottom:.65rem;color:var(--text2);}
-    .ai-result p:last-child{margin-bottom:0;}
-    .ai-result strong{font-weight:600;color:var(--text);}
-    .ai-result ul{padding-left:1.3rem;margin-bottom:.65rem;}
-    .ai-result ul li{margin-bottom:.32rem;}
-    .ai-result .ai-highlight{display:inline-flex;align-items:center;gap:.3rem;background:rgba(124,58,237,.07);border:1px solid rgba(124,58,237,.18);border-radius:4px;padding:.1rem .45rem;font-family:var(--font-m);font-size:.82rem;color:#7c3aed;font-weight:500;}
+    .ai-result{display:flex;flex-direction:column;gap:.55rem;}
+    .ai-section{border-radius:10px;overflow:hidden;border:1.5px solid var(--border);}
+    .ai-section-hd{display:flex;align-items:center;gap:.55rem;padding:.62rem .9rem;border-bottom:1.5px solid var(--border2);}
+    .ai-section-icon{width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0;}
+    .ai-section-title{font-family:var(--font-d);font-size:.78rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;flex:1;}
+    .ai-section-body{padding:.72rem .9rem;font-family:var(--font-b);font-size:.88rem;color:var(--text2);line-height:1.7;}
+    .ai-section-body p{margin:0 0 .5rem;}.ai-section-body p:last-child{margin:0;}
+    .ai-section-body strong{font-weight:600;color:var(--text);}
+    .ai-section-body em{font-style:italic;opacity:.75;}
+    .ai-section-body ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:.32rem;}
+    .ai-section-body ul li{display:flex;align-items:flex-start;gap:.5rem;line-height:1.55;}
+    .ai-section-body ul li::before{content:'';width:5px;height:5px;border-radius:50%;margin-top:.52rem;flex-shrink:0;opacity:.5;}
+    .ai-section[data-t="blue"]{border-color:rgba(0,71,255,.18);}
+    .ai-section[data-t="blue"] .ai-section-hd{background:rgba(0,71,255,.04);}
+    .ai-section[data-t="blue"] .ai-section-icon{background:rgba(0,71,255,.10);color:#0047ff;}
+    .ai-section[data-t="blue"] .ai-section-title{color:#0047ff;}
+    .ai-section[data-t="blue"] .ai-section-body ul li::before{background:#0047ff;}
+    .ai-section[data-t="green"]{border-color:rgba(10,138,92,.2);}
+    .ai-section[data-t="green"] .ai-section-hd{background:rgba(10,138,92,.04);}
+    .ai-section[data-t="green"] .ai-section-icon{background:rgba(10,138,92,.10);color:#0a8a5c;}
+    .ai-section[data-t="green"] .ai-section-title{color:#0a8a5c;}
+    .ai-section[data-t="green"] .ai-section-body ul li::before{background:#0a8a5c;}
+    .ai-section[data-t="orange"]{border-color:rgba(232,93,26,.2);}
+    .ai-section[data-t="orange"] .ai-section-hd{background:rgba(232,93,26,.04);}
+    .ai-section[data-t="orange"] .ai-section-icon{background:rgba(232,93,26,.10);color:#e85d1a;}
+    .ai-section[data-t="orange"] .ai-section-title{color:#e85d1a;}
+    .ai-section[data-t="orange"] .ai-section-body ul li::before{background:#e85d1a;}
+    .ai-section[data-t="violet"]{border-color:rgba(124,58,237,.2);}
+    .ai-section[data-t="violet"] .ai-section-hd{background:rgba(124,58,237,.04);}
+    .ai-section[data-t="violet"] .ai-section-icon{background:rgba(124,58,237,.10);color:#7c3aed;}
+    .ai-section[data-t="violet"] .ai-section-title{color:#7c3aed;}
+    .ai-section[data-t="violet"] .ai-section-body ul li::before{background:#7c3aed;}
+    .ai-section[data-t="amber"]{border-color:rgba(180,83,9,.2);}
+    .ai-section[data-t="amber"] .ai-section-hd{background:rgba(180,83,9,.04);}
+    .ai-section[data-t="amber"] .ai-section-icon{background:rgba(180,83,9,.10);color:#b45309;}
+    .ai-section[data-t="amber"] .ai-section-title{color:#b45309;}
+    .ai-section[data-t="amber"] .ai-section-body ul li::before{background:#b45309;}
+    .ai-rec-wrap{display:flex;flex-direction:column;gap:.4rem;}
+    .ai-rec{display:flex;gap:.6rem;align-items:flex-start;padding:.55rem .72rem;border-radius:7px;background:var(--bg3);border:1px solid var(--border);}
+    .ai-rec-num{width:20px;height:20px;border-radius:50%;background:#7c3aed;color:#fff;font-family:var(--font-d);font-size:.68rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:.1rem;}
+    .ai-rec-text{font-family:var(--font-b);font-size:.85rem;color:var(--text2);line-height:1.6;}
     .ai-badge{display:inline-flex;align-items:center;gap:.25rem;background:rgba(124,58,237,.08);border:1.5px solid rgba(124,58,237,.18);border-radius:4px;padding:.18rem .55rem;font-family:var(--font-d);font-size:.72rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#7c3aed;}
     .ai-meta{font-family:var(--font-m);font-size:.72rem;color:var(--muted);margin-top:.82rem;padding-top:.82rem;border-top:1px solid var(--border2);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.4rem;}
+    @media(max-width:600px){
+      .ai-section-body{font-size:1.55rem;line-height:1.65;}
+      .ai-section-title{font-size:1.3rem;}
+      .ai-rec-text{font-size:1.45rem;}
+    }
     .ai-error{background:rgba(220,38,38,.06);border:1px solid rgba(220,38,38,.2);border-radius:var(--r);padding:.75rem 1rem;font-family:var(--font-m);font-size:.85rem;color:#dc2626;}
   </style>
 </head>
@@ -559,10 +595,9 @@
         <div class="ai-hd">
           <div class="ai-hd-title">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2.2"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
-            Análise com IA — Claude
-            <span class="ai-badge">✦ Claude</span>
+            Análise com IA
           </div>
-          <button class="ai-analyze-btn" id="aiAnalyzeBtn" onclick="runAIAnalysis()">
+          <button class="ai-analyze-btn" id="aiAnalyzeBtn" onclick="runAIAnalysis()" style="display:none;">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
             Analisar treinos
           </button>
@@ -571,7 +606,7 @@
           <div class="ai-empty" id="aiEmpty">
             <div class="ai-empty-icon">✦</div>
             <div style="font-family:var(--font-d);font-weight:700;font-size:1rem;color:var(--text);margin-bottom:.32rem;">Análise inteligente de treinos</div>
-            <div style="font-family:var(--font-m);font-size:.82rem;color:var(--muted);">Clique em <strong>Analisar treinos</strong> para gerar insights personalizados com o Claude AI sobre seu desempenho, comparação de atividades, pontos fortes e sugestões de melhoria.</div>
+            <div style="font-family:var(--font-m);font-size:.82rem;color:var(--muted);">A análise será gerada automaticamente ao carregar as atividades.</div>
           </div>
         </div>
       </div>
@@ -771,9 +806,11 @@ function addToHistory(activities){
     const step=Math.max(1,Math.floor(pts.length/300));
     return pts.filter((_,i)=>i%step===0||i===pts.length-1);
   }
+  const sessionId = Date.now().toString(36);
   hist.unshift({
-    id:Date.now().toString(36),
+    id:sessionId,
     date:new Date().toISOString(),
+    aiResult: null,  // preenchido por saveAIResultToHistory quando análise for gerada
     activities:activities.map(a=>({
       id:a.id,filename:a.filename,label:a.label,
       sport:detectSport(a.label+' '+a.filename),
@@ -782,6 +819,7 @@ function addToHistory(activities){
       points:slim(a.points)
     }))
   });
+  window._lastHistorySessionId = sessionId;
   // Keep only last 20 sessions to avoid quota issues
   const trimmed=hist.slice(0,20);
   try{
@@ -792,6 +830,15 @@ function addToHistory(activities){
     try{saveHistory(light);}catch(e2){console.warn('Histórico: localStorage cheio',e2);}
   }
 }
+function saveAIResultToHistory(aiData){
+  if(!currentUser||!window._lastHistorySessionId)return;
+  const hist=getHistory();
+  const s=hist.find(s=>s.id===window._lastHistorySessionId);
+  if(!s)return;
+  s.aiResult=aiData;
+  try{saveHistory(hist);}catch(e){console.warn('saveAIResultToHistory: quota exceeded',e);}
+}
+window.saveAIResultToHistory=saveAIResultToHistory;
 function setFilter(btn,filter){historyFilter=filter;document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));btn.classList.add('active');renderHistory();}
 function renderHistory(){
   const hist=getHistory(),search=(document.getElementById('historySearch')?.value||'').toLowerCase(),now=Date.now(),sevenD=7*24*3600*1000;
@@ -821,6 +868,7 @@ function renderHistory(){
           </div>
           <div style="display:flex;align-items:center;gap:.38rem;">
             <div class="history-badge">${sportIcon(sport)} ${sport.charAt(0).toUpperCase()+sport.slice(1)}</div>
+            ${s.aiResult?`<div class="history-badge" style="background:rgba(124,58,237,.08);border-color:rgba(124,58,237,.2);color:#7c3aed;">✦ IA</div>`:''}
             <button class="challenge-btn" onclick="event.stopPropagation();openShareModal('${s.id}')">
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
               Desafiar
@@ -885,6 +933,18 @@ function loadHistorySession(id){
 
   // Trigger full dashboard render via app.js
   if(window.renderDashboard) window.renderDashboard();
+
+  // Rastreia sessão ativa para saveAIResultToHistory funcionar após nova análise
+  window._lastHistorySessionId = s.id;
+
+  // Restaura análise IA salva ou dispara nova automaticamente
+  setTimeout(() => {
+    if(s.aiResult && window.restoreAIResult) {
+      window.restoreAIResult(s.aiResult);
+    } else if(window.runAIAnalysis) {
+      window.runAIAnalysis();
+    }
+  }, 100);
 
   toast(`${s.activities.length} atividade(s) carregada(s)`, 'ok');
 }
